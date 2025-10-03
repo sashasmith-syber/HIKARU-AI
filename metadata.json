@@ -1,0 +1,7 @@
+{
+  "name": " AIT Hikaru AI 1.0",
+  "description": "An advanced AI engineering and prompt optimization assistant.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
