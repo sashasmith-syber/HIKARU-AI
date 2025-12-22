@@ -1,6 +1,8 @@
+
 import React, { useContext, useState, useRef } from "react";
 import { AppContext } from "../context/AppContext";
 import PromptLibrary from "./PromptLibrary";
+import { AnalysisMode } from "../types";
 
 const InputBar: React.FC = () => {
   const { 
@@ -12,8 +14,12 @@ const InputBar: React.FC = () => {
     setIsEfficiencyMode,
     isSecurityMode,
     setIsSecurityMode,
+    isThinkingMode,
+    setIsThinkingMode,
     isLiveSessionActive,
-    toggleLiveSession
+    toggleLiveSession,
+    analysisMode,
+    setAnalysisMode
   } = useContext(AppContext);
 
   const [input, setInput] = useState<string>("");
@@ -92,6 +98,13 @@ const InputBar: React.FC = () => {
                   <span className="slider"></span>
                   </label>
               </div>
+              <div className="mode-toggle thinking-mode">
+                  <span>Thinking</span>
+                  <label className="switch">
+                  <input type="checkbox" checked={isThinkingMode} onChange={() => setIsThinkingMode(!isThinkingMode)} disabled={!isUIActive} />
+                  <span className="slider"></span>
+                  </label>
+              </div>
               <div className="mode-toggle">
                   <span>Security</span>
                   <label className="switch">
@@ -99,6 +112,21 @@ const InputBar: React.FC = () => {
                   <span className="slider"></span>
                   </label>
               </div>
+            </div>
+             <div className="analysis-mode-selector">
+                <label htmlFor="analysis-mode">Analysis:</label>
+                <select
+                    id="analysis-mode"
+                    value={analysisMode}
+                    onChange={(e) => setAnalysisMode(e.target.value as AnalysisMode)}
+                    disabled={!isUIActive}
+                    title="Select Hyperdimensional Analysis Mode"
+                >
+                    <option value="standard">Standard</option>
+                    <option value="causal">Causal</option>
+                    <option value="probabilistic">Probabilistic</option>
+                    <option value="abstract">Abstract</option>
+                </select>
             </div>
         </div>
         <div className="input-row">
@@ -126,7 +154,7 @@ const InputBar: React.FC = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === "Enter" && handleSendClick()}
-              placeholder={isLiveSessionActive ? "Live session active..." : "Articulate your query, OPERATOR..."}
+              placeholder={isLiveSessionActive ? "Live session active..." : (isThinkingMode ? "Model is in Deep Thinking mode..." : "Articulate your query, OPERATOR...")}
               aria-label="Your message to Hikaru"
               disabled={!isUIActive}
             />

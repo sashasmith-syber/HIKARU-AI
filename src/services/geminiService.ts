@@ -1,4 +1,5 @@
-import { GoogleGenAI, LiveServerMessage, Modality, Blob, Chat } from "@google/genai";
+
+import { GoogleGenAI, LiveServerMessage, Modality, Blob, Chat, Type, Part } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
 
@@ -39,10 +40,11 @@ export const generateImage = async (prompt: string): Promise<string> => {
     }
 };
 
-export const startChat = (systemInstruction: string): Chat => {
+export const startChat = (systemInstruction: string, model: string = 'gemini-3-flash-preview', config: any = {}): Chat => {
   const chat = ai.chats.create({
-    model: 'gemini-2.5-flash',
+    model: model,
     config: {
+      ...config,
       systemInstruction,
     },
   });
@@ -53,6 +55,8 @@ export const generateOneOffContentStream = async (
     text: string, 
     attachmentFile: File | null,
     systemInstruction: string,
+    model: string = 'gemini-3-flash-preview',
+    config: any = {}
 ) => {
     const parts: any[] = [];
     if (attachmentFile) {
@@ -65,14 +69,34 @@ export const generateOneOffContentStream = async (
     if (parts.length === 0) return null;
 
     const result = await ai.models.generateContentStream({
-        model: "gemini-2.5-flash",
+        model: model,
         contents: { parts },
         config: {
+          ...config,
           systemInstruction: systemInstruction
         }
     });
 
     return result;
+};
+
+export const generateJsonContent = async (prompt: string, schema: any, model: string = 'gemini-3-flash-preview') => {
+    const response = await ai.models.generateContent({
+        model: model,
+        contents: prompt,
+        config: {
+            responseMimeType: "application/json",
+            responseSchema: schema,
+        },
+    });
+
+    try {
+        const jsonText = response.text.trim();
+        return JSON.parse(jsonText);
+    } catch (e) {
+        console.error("Failed to parse JSON response:", response.text);
+        throw new Error("Invalid JSON response from model.");
+    }
 };
 
 
@@ -154,9 +178,6 @@ export const connectLiveSession = async ({
         callbacks: {
             onopen: () => console.log('Live session opened'),
             onmessage: (message: LiveServerMessage) => {
-                // FIX: Removed logic that mutates the message object.
-                // The base64 decoding and audio processing will be handled in the component context
-                // to avoid side effects and incorrect data handling.
                 onMessage(message);
             },
             onerror: onError,

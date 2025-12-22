@@ -2,7 +2,14 @@ import React, { useContext } from 'react';
 import { AppContext } from '../context/AppContext';
 
 const StatusBar: React.FC = () => {
-    const { ethicalStatus, interactionCount, intentDrift, ethicalThreshold } = useContext(AppContext);
+    const { 
+        ethicalStatus, 
+        interactionCount, 
+        intentDrift, 
+        ethicalThreshold,
+        toggleOptimizationModal,
+        satisfactionScore 
+    } = useContext(AppContext);
 
     const getEthicalStatusIcon = () => {
         switch (ethicalStatus) {
@@ -16,6 +23,12 @@ const StatusBar: React.FC = () => {
                  return <span className="icon" title="Ethical Review: Idle">➖</span>;
         }
     };
+    
+    const getStatusColor = () => {
+        if (satisfactionScore > 85) return 'success';
+        if (satisfactionScore > 60) return 'caution';
+        return 'danger';
+    };
 
     return (
         <div className="status-bar">
@@ -23,6 +36,10 @@ const StatusBar: React.FC = () => {
                 <div className="status-item" title="Ethical Review Status">
                     {getEthicalStatusIcon()}
                     <span>Ethical Review</span>
+                </div>
+                 <div className="status-item clickable" onClick={toggleOptimizationModal} title="Open System Optimization Panel">
+                    <span className={`icon ${getStatusColor()}`}>⚙️</span>
+                    <span>System Status</span>
                 </div>
             </div>
             <div className="status-section">

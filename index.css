@@ -1,3 +1,4 @@
+
 :root {
   --background-color: #000000;
   --surface-color: #0A0A0A;
@@ -7,6 +8,7 @@
   --accent-success: #00FF00;
   --accent-caution: #FFD700;
   --accent-danger: #FF0000;
+  --accent-thinking: #BF00FF;
 
   --border-color: rgba(255, 255, 255, 0.15);
   --user-bubble-color: transparent;
@@ -16,6 +18,7 @@
   --font-secondary: 'Roboto Mono', monospace;
   
   --text-glow-success: 0 0 5px rgba(0, 255, 0, 0.7);
+  --text-glow-thinking: 0 0 10px rgba(191, 0, 255, 0.7);
   --box-glow-success: 0 0 8px rgba(0, 255, 0, 0.5);
 }
 
@@ -214,6 +217,152 @@ body {
   color: var(--primary-text-color);
 }
 
+.message-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 0.75rem;
+}
+
+.feedback-btn, .explain-btn, .simulate-btn {
+  background: none;
+  border: none;
+  color: var(--secondary-text-color);
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s;
+}
+
+.feedback-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.feedback-btn:hover:not(:disabled), .explain-btn:hover, .simulate-btn:hover {
+  color: var(--primary-text-color);
+}
+
+.feedback-btn.active {
+  color: var(--accent-success);
+}
+.feedback-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.explain-btn, .simulate-btn {
+  font-size: 12px;
+  font-family: var(--font-primary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.explain-btn {
+  margin-left: auto;
+}
+.simulate-btn {
+    margin-left: 1rem;
+}
+
+.explanation-bubble {
+  margin-top: 1rem;
+  max-width: 90%;
+  padding: 0.85rem 1.25rem;
+  border-radius: 4px;
+  border: 1px solid var(--accent-caution);
+  background-color: rgba(255, 215, 0, 0.05);
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.explanation-bubble.loading {
+    padding: 1.5rem 1.25rem;
+}
+
+.explanation-bubble pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: var(--font-secondary);
+    font-size: 13px;
+    color: var(--primary-text-color);
+    line-height: 1.6;
+}
+
+.simulation-container {
+    margin-top: 1rem;
+    width: 100%;
+    animation: fadeIn 0.5s ease-out forwards;
+}
+
+.simulation-title {
+    font-size: 0.7rem;
+    color: var(--secondary-text-color);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 0.75rem;
+}
+
+.scenarios-wrapper {
+    display: flex;
+    gap: 1rem;
+    width: 100%;
+}
+
+.scenario-card {
+    flex: 1;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 1rem;
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.scenario-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.scenario-header h4 {
+    font-weight: 500;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.scenario-probability {
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.scenario-card.best-case .scenario-probability { color: var(--accent-success); }
+.scenario-card.worst-case .scenario-probability { color: var(--accent-danger); }
+.scenario-card.most-likely .scenario-probability { color: var(--accent-caution); }
+
+.probability-bar {
+    height: 4px;
+    background-color: var(--border-color);
+    border-radius: 2px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+}
+
+.probability-bar-fill {
+    height: 100%;
+}
+.scenario-card.best-case .probability-bar-fill { background-color: var(--accent-success); }
+.scenario-card.worst-case .probability-bar-fill { background-color: var(--accent-danger); }
+.scenario-card.most-likely .probability-bar-fill { background-color: var(--accent-caution); }
+
+
+.scenario-analysis {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--secondary-text-color);
+}
+
 .chat-input-area {
   display: flex;
   flex-direction: column;
@@ -352,26 +501,41 @@ body {
     animation: fadeIn 1.5s infinite alternate;
 }
 
+.chat-message.model .loading-indicator.thinking::before {
+    content: "[Hikaru] Deep Thinking...";
+    color: var(--accent-thinking);
+    text-shadow: var(--text-glow-thinking);
+}
+
 .input-controls {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 1.5rem;
+  justify-content: space-between;
+  width: 100%;
 }
 
 .mode-toggle-group {
     display: flex;
     align-items: center;
-    gap: 1.5rem;
+    gap: 1rem;
 }
 
 .mode-toggle {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  font-size: 0.8rem;
+  gap: 0.5rem;
+  font-size: 0.75rem;
   color: var(--secondary-text-color);
   letter-spacing: 1px;
+}
+
+.mode-toggle.thinking-mode input:checked + .slider {
+    background-color: rgba(191, 0, 255, 0.3);
+}
+
+.mode-toggle.thinking-mode input:checked + .slider:before {
+    background-color: var(--accent-thinking);
+    box-shadow: 0 0 5px var(--accent-thinking);
 }
 
 .switch {
@@ -419,6 +583,42 @@ input:checked + .slider {
 input:checked + .slider:before {
   background-color: var(--primary-text-color);
   transform: translateX(16px);
+}
+
+.analysis-mode-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.analysis-mode-selector label {
+    font-size: 0.8rem;
+    color: var(--secondary-text-color);
+    letter-spacing: 1px;
+}
+
+.analysis-mode-selector select {
+    background-color: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--secondary-text-color);
+    padding: 0.4rem 0.6rem;
+    border-radius: 4px;
+    font-family: var(--font-primary);
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.analysis-mode-selector select:focus {
+    outline: none;
+    border-color: var(--primary-text-color);
+}
+.analysis-mode-selector select:hover {
+    color: var(--primary-text-color);
+}
+
+.analysis-mode-selector select option {
+    background-color: var(--background-color);
+    color: var(--primary-text-color);
 }
 
 .anchor-button.active, .mic-button.active {
@@ -480,6 +680,14 @@ input:checked + .slider:before {
     align-items: center;
     gap: 0.5rem;
 }
+.status-item.clickable {
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.status-item.clickable:hover {
+    color: var(--primary-text-color);
+}
+
 .status-item .icon {
     font-size: 16px;
 }
@@ -675,4 +883,90 @@ input:checked + .slider:before {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+/* Optimization Modal */
+.optimization-modal-body {
+  padding: 1.5rem;
+  display: flex;
+  gap: 2rem;
+  max-height: 70vh;
+}
+.optimization-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.optimization-section h3 {
+  font-size: 0.8rem;
+  color: var(--secondary-text-color);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.metrics-list, .modules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.metric-item, .module-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+.metric-item span:first-child, .module-item span:first-child {
+  color: var(--secondary-text-color);
+}
+.metric-value.success { color: var(--accent-success); text-shadow: var(--text-glow-success); }
+.metric-value.caution { color: var(--accent-caution); }
+.metric-value.danger { color: var(--accent-danger); }
+
+.optimization-log {
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 1rem;
+  background-color: #000;
+  height: 150px;
+  overflow-y: auto;
+  font-size: 12px;
+  color: var(--secondary-text-color);
+}
+.log-entry {
+  margin-bottom: 0.5rem;
+}
+.log-entry:last-child {
+  margin-bottom: 0;
+}
+
+.modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+}
+.optimize-button {
+  background: none;
+  border: 1px solid var(--border-color);
+  color: var(--secondary-text-color);
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font-primary);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.optimize-button:hover:not(:disabled) {
+  border-color: var(--accent-success);
+  color: var(--accent-success);
+  text-shadow: var(--text-glow-success);
+}
+.optimize-button:disabled {
+  cursor: wait;
+  opacity: 0.5;
 }

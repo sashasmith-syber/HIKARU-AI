@@ -1,5 +1,6 @@
+
 import React, { createContext, useState, useRef } from "react";
-import { Message } from "../types";
+import { Message, AnalysisMode } from "../types";
 import { 
     fileToGenerativePart,
     generateImage, 
@@ -8,11 +9,12 @@ import {
     connectLiveSession, 
     createBlob, 
     decode, 
-    decodeAudioData 
+    decodeAudioData,
+    generateJsonContent
 } from "../services/geminiService";
-import { HIKARU_PERSONA, ADVISOR_PERSONA, HIKARU_EFFICIENCY_PERSONA, HIKARU_LIVE_PERSONA, SECURITY_REVIEW_PERSONA } from "../constants/personas";
+import { HIKARU_PERSONA, ADVISOR_PERSONA, HIKARU_EFFICIENCY_PERSONA, HIKARU_LIVE_PERSONA, SECURITY_REVIEW_PERSONA, ANALYSIS_MODE_PROMPTS } from "../constants/personas";
 import { LiveSession } from "../services/geminiService";
-import { Chat } from "@google/genai";
+import { Chat, Type } from "@google/genai";
 
 type EthicalStatus = 'idle' | 'approved' | 'caution' | 'rejected';
 
@@ -25,6 +27,8 @@ interface AppContextType {
   setIsEfficiencyMode: (isEfficiencyMode: boolean) => void;
   isSecurityMode: boolean;
   setIsSecurityMode: (isSecurityMode: boolean) => void;
+  isThinkingMode: boolean;
+  setIsThinkingMode: (isThinkingMode: boolean) => void;
   sendMessage: (input: string, attachment: File | null, attachmentPreview: string | null) => Promise<void>;
   startNewChat: () => void;
   isLiveSessionActive: boolean;
@@ -34,6 +38,16 @@ interface AppContextType {
   interactionCount: number;
   intentDrift: number; // 0-100
   ethicalThreshold: number; // 0-100
+  // Self-Optimization Features
+  isOptimizationModalOpen: boolean;
+  toggleOptimizationModal: () => void;
+  handleMessageFeedback: (messageId: string, feedback: 'liked' | 'disliked') => void;
+  requestMessageExplanation: (messageId: string) => void;
+  satisfactionScore: number;
+  // Hyperdimensional Features
+  analysisMode: AnalysisMode;
+  setAnalysisMode: (mode: AnalysisMode) => void;
+  requestScenarioSimulation: (messageId: string) => void;
 }
 
 export const AppContext = createContext<AppContextType>(null!);
@@ -44,6 +58,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isAdvisorMode, setIsAdvisorMode] = useState<boolean>(false);
   const [isEfficiencyMode, setIsEfficiencyMode] = useState<boolean>(false);
   const [isSecurityMode, setIsSecurityMode] = useState<boolean>(false);
+  const [isThinkingMode, setIsThinkingMode] = useState<boolean>(false);
   const chatSessionRef = useRef<Chat | null>(null);
 
   // Status Bar State
@@ -66,7 +81,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Transcription Refs
   const currentInputTranscriptionId = useRef<string | null>(null);
   const currentOutputTranscriptionId = useRef<string | null>(null);
+
+  // Optimization State
+  const [isOptimizationModalOpen, setIsOptimizationModalOpen] = useState<boolean>(false);
+  const [satisfactionScore, setSatisfactionScore] = useState<number>(95);
   
+  // Hyperdimensional State
+  const [analysisMode, setAnalysisMode] = useState<AnalysisMode>('standard');
+
   const startNewChat = () => {
     setMessages([]);
     chatSessionRef.current = null;
@@ -80,6 +102,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (value) {
         setIsEfficiencyMode(false);
         setIsSecurityMode(false);
+        setIsThinkingMode(false);
     }
     startNewChat();
   };
@@ -89,6 +112,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (value) {
           setIsAdvisorMode(false);
           setIsSecurityMode(false);
+          setIsThinkingMode(false);
       }
       startNewChat();
   };
@@ -98,6 +122,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (value) {
           setIsAdvisorMode(false);
           setIsEfficiencyMode(false);
+          setIsThinkingMode(false);
+      }
+      startNewChat();
+  };
+
+  const handleSetIsThinkingMode = (value: boolean) => {
+      setIsThinkingMode(value);
+      if (value) {
+          setIsAdvisorMode(false);
+          setIsEfficiencyMode(false);
+          setIsSecurityMode(false);
       }
       startNewChat();
   };
@@ -134,6 +169,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIntentDrift(prev => Math.min(100, prev + Math.floor(Math.random() * 15)));
   };
 
+  const getModelConfig = () => {
+    if (isThinkingMode) {
+      return { 
+        model: 'gemini-3-pro-preview', 
+        config: { thinkingConfig: { thinkingBudget: 32768 } } 
+      };
+    }
+    if (isEfficiencyMode) {
+      return { model: 'gemini-2.5-flash-lite-latest', config: {} };
+    }
+    return { model: 'gemini-3-flash-preview', config: {} };
+  };
+
+  const checkApiKeyRequirement = async () => {
+    if (isThinkingMode) {
+        if (!(await (window as any).aistudio.hasSelectedApiKey())) {
+            await (window as any).aistudio.openSelectKey();
+            return true; // Assume success and proceed
+        }
+    }
+    return true;
+  };
 
   const sendMessage = async (input: string, attachment: File | null, attachmentPreview: string | null) => {
     const userMessage: Message = { id: generateUniqueId(), role: "user", text: input, image: attachmentPreview || undefined };
@@ -148,6 +205,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
+    await checkApiKeyRequirement();
     setIsLoading(true);
     simulateStatusUpdate();
 
@@ -161,7 +219,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (isEfficiencyMode) persona = HIKARU_EFFICIENCY_PERSONA;
       if (isSecurityMode) persona = SECURITY_REVIEW_PERSONA;
 
-      const modelMessage: Message = { id: generateUniqueId(), role: "model", text: "" };
+      const modelMessage: Message = { id: generateUniqueId(), role: "model", text: "", isThinking: isThinkingMode };
       setMessages((prev) => [...prev, userMessage, modelMessage]);
       await handleStandardSend(input, attachment, persona, modelMessage.id);
     }
@@ -171,16 +229,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const handleStandardSend = async (text: string, attachmentFile: File | null, hikaruPersona: string, messageId: string) => {
     try {
+      const { model, config } = getModelConfig();
       if (!chatSessionRef.current) {
-        chatSessionRef.current = startChat(hikaruPersona);
+        chatSessionRef.current = startChat(hikaruPersona, model, config);
       }
       
+      let finalPrompt = text;
+      if (analysisMode !== 'standard' && ANALYSIS_MODE_PROMPTS[analysisMode]) {
+          finalPrompt = `${ANALYSIS_MODE_PROMPTS[analysisMode]}\n\n--- OPERATOR REQUEST ---\n${text}`;
+      }
+
       const messageParts: any[] = [];
       if (attachmentFile) {
         messageParts.push(await fileToGenerativePart(attachmentFile));
       }
-      if (text.trim()) {
-        messageParts.push({ text });
+      if (finalPrompt.trim()) {
+        messageParts.push({ text: finalPrompt });
       }
 
       if (messageParts.length === 0) return;
@@ -189,7 +253,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       for await (const chunk of stream) {
         if (chunk.text) {
-            setMessages((prev) => prev.map(msg => msg.id === messageId ? {...msg, text: msg.text + chunk.text} : msg));
+            setMessages((prev) => prev.map(msg => msg.id === messageId ? {...msg, text: msg.text + chunk.text, isThinking: false} : msg));
         }
       }
     } catch (error) {
@@ -199,8 +263,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   
   const handleAdvisorModeSend = async (text: string, attachmentFile: File | null, hikaruPersona: string, advisorMessageId: string, finalMessageId: string) => {
     let advisorResponse = "";
+    const { model, config } = getModelConfig();
     try {
-      const stream = await generateOneOffContentStream(text, attachmentFile, ADVISOR_PERSONA);
+      const stream = await generateOneOffContentStream(text, attachmentFile, ADVISOR_PERSONA, model, config);
       if (stream) {
         for await (const chunk of stream) {
             advisorResponse += chunk.text;
@@ -215,7 +280,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     try {
        if (!chatSessionRef.current) {
-        chatSessionRef.current = startChat(hikaruPersona);
+        chatSessionRef.current = startChat(hikaruPersona, model, config);
       }
 
       const hikaruPromptText = `
@@ -248,7 +313,7 @@ Formulate your final, structured response based on the analysis.
   const handleError = (error: any, messageId: string, customPrefix?: string) => {
     console.error(customPrefix || "Error in generation:", error);
     const errorMessage = `${customPrefix || "Error"}: Could not retrieve response from the model. Check console for details.`;
-    setMessages((prev) => prev.map(msg => msg.id === messageId ? {...msg, text: errorMessage } : msg));
+    setMessages((prev) => prev.map(msg => msg.id === messageId ? {...msg, text: errorMessage, isThinking: false } : msg));
     setEthicalStatus('rejected');
   };
   
@@ -359,6 +424,111 @@ Formulate your final, structured response based on the analysis.
     }
   };
 
+  const toggleOptimizationModal = () => setIsOptimizationModalOpen(prev => !prev);
+  
+  const handleMessageFeedback = (messageId: string, feedback: 'liked' | 'disliked') => {
+    setMessages(prev => prev.map(msg => 
+      msg.id === messageId ? { ...msg, feedback } : msg
+    ));
+    if (feedback === 'liked') {
+        setSatisfactionScore(prev => Math.min(100, prev + 2));
+    } else {
+        setSatisfactionScore(prev => Math.max(0, prev - 5));
+    }
+  };
+
+  const requestMessageExplanation = async (messageId: string) => {
+    const messageToExplain = messages.find(msg => msg.id === messageId);
+    if (!messageToExplain) return;
+
+    setMessages(prev => prev.map(msg => 
+      msg.id === messageId ? { ...msg, isExplanationLoading: true, explanation: '' } : msg
+    ));
+
+    const metaPrompt = `You are Hikaru. Your previous response was: "${messageToExplain.text}". The OPERATOR has requested a meta-analysis. Provide a concise explanation of your reasoning, the key data points you utilized, and the methodology behind your response. Structure this as a debriefing for the OPERATOR.`;
+    
+    try {
+      const { model, config } = getModelConfig();
+      const stream = await generateOneOffContentStream(metaPrompt, null, HIKARU_PERSONA, model, config);
+      if (stream) {
+        for await (const chunk of stream) {
+            if (chunk.text) {
+                setMessages(prev => prev.map(msg => 
+                    msg.id === messageId 
+                    ? { ...msg, explanation: (msg.explanation || '') + chunk.text } 
+                    : msg
+                ));
+            }
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching explanation:", error);
+      setMessages(prev => prev.map(msg => 
+        msg.id === messageId 
+        ? { ...msg, explanation: "Error: Could not retrieve meta-analysis." } 
+        : msg
+      ));
+    } finally {
+        setMessages(prev => prev.map(msg => 
+            msg.id === messageId ? { ...msg, isExplanationLoading: false } : msg
+        ));
+    }
+  };
+
+  const requestScenarioSimulation = async (messageId: string) => {
+    const messageToSimulate = messages.find(msg => msg.id === messageId);
+    if (!messageToSimulate) return;
+
+    setMessages(prev => prev.map(msg => 
+        msg.id === messageId ? { ...msg, isSimulating: true } : msg
+    ));
+
+    const simulationPrompt = `Based on your previous response: "${messageToSimulate.text}". Generate three distinct scenarios: a best-case outcome, a worst-case outcome, and a most-likely outcome. For each, provide a title, a probability score as a number between 0 and 100, and a concise analysis.`;
+
+    const schema = {
+        type: Type.OBJECT,
+        properties: {
+          scenarios: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                title: { type: Type.STRING },
+                probability: { type: Type.NUMBER },
+                analysis: { type: Type.STRING }
+              },
+              required: ['title', 'probability', 'analysis']
+            }
+          }
+        },
+        required: ['scenarios']
+    };
+
+    try {
+        const { model } = getModelConfig();
+        const result = await generateJsonContent(simulationPrompt, schema, model);
+        if (result && result.scenarios) {
+            setMessages(prev => prev.map(msg => 
+                msg.id === messageId ? { ...msg, scenarios: result.scenarios } : msg
+            ));
+        } else {
+            throw new Error("Invalid or empty response from scenario simulation.");
+        }
+    } catch (error) {
+        console.error("Error fetching scenarios:", error);
+         setMessages(prev => prev.map(msg => 
+            msg.id === messageId 
+            ? { ...msg, text: `${msg.text}\n\n[HIKARU - SIMULATION FAILED: Could not generate scenarios.]` } 
+            : msg
+        ));
+    } finally {
+        setMessages(prev => prev.map(msg => 
+            msg.id === messageId ? { ...msg, isSimulating: false } : msg
+        ));
+    }
+  };
+
+
   return (
     <AppContext.Provider value={{ 
         messages, 
@@ -370,13 +540,23 @@ Formulate your final, structured response based on the analysis.
         setIsEfficiencyMode: handleSetIsEfficiencyMode,
         isSecurityMode,
         setIsSecurityMode: handleSetIsSecurityMode,
+        isThinkingMode,
+        setIsThinkingMode: handleSetIsThinkingMode,
         startNewChat,
         isLiveSessionActive,
         toggleLiveSession,
         ethicalStatus,
         interactionCount,
         intentDrift,
-        ethicalThreshold
+        ethicalThreshold,
+        isOptimizationModalOpen,
+        toggleOptimizationModal,
+        handleMessageFeedback,
+        requestMessageExplanation,
+        satisfactionScore,
+        analysisMode,
+        setAnalysisMode,
+        requestScenarioSimulation
     }}>
       {children}
     </AppContext.Provider>
