@@ -1,5 +1,5 @@
 
-import { GoogleGenAI, LiveServerMessage, Modality, Blob, Chat, Type, Part } from "@google/genai";
+import { GoogleGenAI, LiveServerMessage, Modality, Blob, Chat } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
 
@@ -93,7 +93,7 @@ export const generateJsonContent = async (prompt: string, schema: any, model: st
     try {
         const jsonText = response.text.trim();
         return JSON.parse(jsonText);
-    } catch (e) {
+    } catch {
         console.error("Failed to parse JSON response:", response.text);
         throw new Error("Invalid JSON response from model.");
     }

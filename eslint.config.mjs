@@ -18,18 +18,59 @@ export default [
         },
       },
       globals: {
+        // Console and basic browser APIs
         console: 'readonly',
         window: 'readonly',
         document: 'readonly',
         navigator: 'readonly',
         localStorage: 'readonly',
+        
+        // DOM Element types
         HTMLElement: 'readonly',
+        HTMLDivElement: 'readonly',
+        HTMLInputElement: 'readonly',
+        HTMLCanvasElement: 'readonly',
         Element: 'readonly',
         Node: 'readonly',
-        NodeJS: 'readonly',
+        
+        // File APIs
+        File: 'readonly',
+        FileReader: 'readonly',
+        
+        // Audio APIs
+        AudioContext: 'readonly',
+        AudioBuffer: 'readonly',
+        AudioBufferSourceNode: 'readonly',
+        MediaStream: 'readonly',
+        MediaStreamAudioSourceNode: 'readonly',
+        ScriptProcessorNode: 'readonly',
+        
+        // Event types
+        ErrorEvent: 'readonly',
+        CloseEvent: 'readonly',
+        
+        // Timing functions
+        setTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        clearTimeout: 'readonly',
+        requestAnimationFrame: 'readonly',
+        cancelAnimationFrame: 'readonly',
+        
+        // Encoding functions
+        btoa: 'readonly',
+        atob: 'readonly',
+        
+        // Fetch API
         fetch: 'readonly',
         Response: 'readonly',
         Request: 'readonly',
+        
+        // Node.js globals
+        NodeJS: 'readonly',
+        process: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
       },
     },
     plugins: {

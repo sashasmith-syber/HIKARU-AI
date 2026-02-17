@@ -10,10 +10,10 @@ import {
     createBlob, 
     decode, 
     decodeAudioData,
-    generateJsonContent
+    generateJsonContent,
+    LiveSession
 } from "../services/geminiService";
 import { HIKARU_PERSONA, ADVISOR_PERSONA, HIKARU_EFFICIENCY_PERSONA, HIKARU_LIVE_PERSONA, SECURITY_REVIEW_PERSONA, ANALYSIS_MODE_PROMPTS } from "../constants/personas";
-import { LiveSession } from "../services/geminiService";
 import { Chat, Type } from "@google/genai";
 
 type EthicalStatus = 'idle' | 'approved' | 'caution' | 'rejected';
