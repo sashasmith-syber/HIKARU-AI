@@ -14,9 +14,18 @@ import {
     LiveSession
 } from "../services/geminiService";
 import { HIKARU_PERSONA, ADVISOR_PERSONA, HIKARU_EFFICIENCY_PERSONA, HIKARU_LIVE_PERSONA, SECURITY_REVIEW_PERSONA, ANALYSIS_MODE_PROMPTS } from "../constants/personas";
-import { Chat, Type } from "@google/genai";
+import { Chat, Type, Part } from "@google/genai";
 
 type EthicalStatus = 'idle' | 'approved' | 'caution' | 'rejected';
+
+// Define proper window type extensions
+interface AIStudioWindow extends Window {
+  aistudio?: {
+    hasSelectedApiKey(): Promise<boolean>;
+    openSelectKey(): Promise<void>;
+  };
+  webkitAudioContext?: typeof AudioContext;
+}
 
 interface AppContextType {
   messages: Message[];
@@ -50,7 +59,7 @@ interface AppContextType {
   requestScenarioSimulation: (messageId: string) => void;
 }
 
-export const AppContext = createContext<AppContextType>(null!);
+export const AppContext = createContext<AppContextType | null>(null);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -184,8 +193,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const checkApiKeyRequirement = async () => {
     if (isThinkingMode) {
-        if (!(await (window as any).aistudio.hasSelectedApiKey())) {
-            await (window as any).aistudio.openSelectKey();
+        const aiStudioWindow = window as AIStudioWindow;
+        if (aiStudioWindow.aistudio && !(await aiStudioWindow.aistudio.hasSelectedApiKey())) {
+            await aiStudioWindow.aistudio.openSelectKey();
             return true; // Assume success and proceed
         }
     }
@@ -239,7 +249,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           finalPrompt = `${ANALYSIS_MODE_PROMPTS[analysisMode]}\n\n--- OPERATOR REQUEST ---\n${text}`;
       }
 
-      const messageParts: any[] = [];
+      const messageParts: Part[] = [];
       if (attachmentFile) {
         messageParts.push(await fileToGenerativePart(attachmentFile));
       }
@@ -293,7 +303,7 @@ ${advisorResponse}
 Formulate your final, structured response based on the analysis.
 `;
 
-      const messageParts: any[] = [{ text: hikaruPromptText }];
+      const messageParts: Part[] = [{ text: hikaruPromptText }];
       if (attachmentFile) {
         messageParts.push(await fileToGenerativePart(attachmentFile));
       }
@@ -310,7 +320,7 @@ Formulate your final, structured response based on the analysis.
     }
   };
 
-  const handleError = (error: any, messageId: string, customPrefix?: string) => {
+  const handleError = (error: unknown, messageId: string, customPrefix?: string) => {
     console.error(customPrefix || "Error in generation:", error);
     const errorMessage = `${customPrefix || "Error"}: Could not retrieve response from the model. Check console for details.`;
     setMessages((prev) => prev.map(msg => msg.id === messageId ? {...msg, text: errorMessage, isThinking: false } : msg));
@@ -334,8 +344,9 @@ Formulate your final, structured response based on the analysis.
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaStreamRef.current = stream;
       setIsLiveSessionActive(true);
-      inputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-      outputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+      const aiStudioWindow = window as AIStudioWindow;
+      inputAudioContextRef.current = new (AudioContext || aiStudioWindow.webkitAudioContext || AudioContext)({ sampleRate: 16000 });
+      outputAudioContextRef.current = new (AudioContext || aiStudioWindow.webkitAudioContext || AudioContext)({ sampleRate: 24000 });
       nextStartTime.current = 0;
 
       const sessionPromise = connectLiveSession({
@@ -398,9 +409,14 @@ Formulate your final, structured response based on the analysis.
 
       sessionPromise.then(session => {
         liveSessionRef.current = session;
-        const source = inputAudioContextRef.current!.createMediaStreamSource(stream);
+        const inputContext = inputAudioContextRef.current;
+        if (!inputContext) {
+          console.error("Input audio context not initialized");
+          return;
+        }
+        const source = inputContext.createMediaStreamSource(stream);
         mediaStreamSourceRef.current = source;
-        const scriptProcessor = inputAudioContextRef.current!.createScriptProcessor(4096, 1, 1);
+        const scriptProcessor = inputContext.createScriptProcessor(4096, 1, 1);
         scriptProcessorRef.current = scriptProcessor;
         scriptProcessor.onaudioprocess = (audioProcessingEvent) => {
             const inputData = audioProcessingEvent.inputBuffer.getChannelData(0);
@@ -408,7 +424,7 @@ Formulate your final, structured response based on the analysis.
             sessionPromise.then(s => s.sendRealtimeInput({ media: pcmBlob }));
         };
         source.connect(scriptProcessor);
-        scriptProcessor.connect(inputAudioContextRef.current!.destination);
+        scriptProcessor.connect(inputContext.destination);
       });
     } catch (error) {
       console.error("Failed to start live session:", error);
@@ -561,4 +577,13 @@ Formulate your final, structured response based on the analysis.
       {children}
     </AppContext.Provider>
   );
+};
+
+// Custom hook to use AppContext with proper type checking
+export const useAppContext = () => {
+  const context = React.useContext(AppContext);
+  if (!context) {
+    throw new Error('useAppContext must be used within AppProvider');
+  }
+  return context;
 };

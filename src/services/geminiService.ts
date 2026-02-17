@@ -1,5 +1,5 @@
 
-import { GoogleGenAI, LiveServerMessage, Modality, Blob, Chat } from "@google/genai";
+import { GoogleGenAI, LiveServerMessage, Modality, Blob, Chat, Part } from "@google/genai";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
 
@@ -40,7 +40,7 @@ export const generateImage = async (prompt: string): Promise<string> => {
     }
 };
 
-export const startChat = (systemInstruction: string, model: string = 'gemini-3-flash-preview', config: any = {}): Chat => {
+export const startChat = (systemInstruction: string, model: string = 'gemini-3-flash-preview', config: Record<string, unknown> = {}): Chat => {
   const chat = ai.chats.create({
     model: model,
     config: {
@@ -56,9 +56,9 @@ export const generateOneOffContentStream = async (
     attachmentFile: File | null,
     systemInstruction: string,
     model: string = 'gemini-3-flash-preview',
-    config: any = {}
+    config: Record<string, unknown> = {}
 ) => {
-    const parts: any[] = [];
+    const parts: Part[] = [];
     if (attachmentFile) {
         parts.push(await fileToGenerativePart(attachmentFile));
     }
@@ -80,7 +80,7 @@ export const generateOneOffContentStream = async (
     return result;
 };
 
-export const generateJsonContent = async (prompt: string, schema: any, model: string = 'gemini-3-flash-preview') => {
+export const generateJsonContent = async (prompt: string, schema: Record<string, unknown>, model: string = 'gemini-3-flash-preview') => {
     const response = await ai.models.generateContent({
         model: model,
         contents: prompt,

@@ -21,6 +21,7 @@ export default [
         // Console and basic browser APIs
         console: 'readonly',
         window: 'readonly',
+        Window: 'readonly',
         document: 'readonly',
         navigator: 'readonly',
         localStorage: 'readonly',
