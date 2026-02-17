@@ -345,8 +345,9 @@ Formulate your final, structured response based on the analysis.
       mediaStreamRef.current = stream;
       setIsLiveSessionActive(true);
       const aiStudioWindow = window as AIStudioWindow;
-      inputAudioContextRef.current = new (AudioContext || aiStudioWindow.webkitAudioContext || AudioContext)({ sampleRate: 16000 });
-      outputAudioContextRef.current = new (AudioContext || aiStudioWindow.webkitAudioContext || AudioContext)({ sampleRate: 24000 });
+      const AudioContextConstructor = AudioContext || aiStudioWindow.webkitAudioContext;
+      inputAudioContextRef.current = new AudioContextConstructor({ sampleRate: 16000 });
+      outputAudioContextRef.current = new AudioContextConstructor({ sampleRate: 24000 });
       nextStartTime.current = 0;
 
       const sessionPromise = connectLiveSession({
