@@ -1,0 +1,20 @@
+# CODEOWNERS for sashasmith-syber/HIKARU-AI
+# All files — default owner
+* @sashasmith-syber
+
+# Core source
+/src/ @sashasmith-syber
+/index.tsx @sashasmith-syber
+/index.html @sashasmith-syber
+
+# Configuration & build
+/vite.config.ts @sashasmith-syber
+/tsconfig.json @sashasmith-syber
+/package.json @sashasmith-syber
+/metadata.json @sashasmith-syber
+
+# CI/CD and GitHub config
+/.github/ @sashasmith-syber
+
+# Security-sensitive
+/.env* @sashasmith-syber
