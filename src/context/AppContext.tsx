@@ -1,6 +1,6 @@
 
 import React, { createContext, useState, useRef } from "react";
-import { Message, AnalysisMode } from "../types";
+import { Message, AnalysisMode, Artifact } from "../types";
 import { 
     fileToGenerativePart,
     generateImage, 
@@ -48,6 +48,9 @@ interface AppContextType {
   analysisMode: AnalysisMode;
   setAnalysisMode: (mode: AnalysisMode) => void;
   requestScenarioSimulation: (messageId: string) => void;
+  // Artifacts
+  activeArtifact: Artifact | null;
+  setActiveArtifact: (artifact: Artifact | null) => void;
 }
 
 export const AppContext = createContext<AppContextType>(null!);
@@ -89,12 +92,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Hyperdimensional State
   const [analysisMode, setAnalysisMode] = useState<AnalysisMode>('standard');
 
+  // Artifact State
+  const [activeArtifact, setActiveArtifact] = useState<Artifact | null>(null);
+
   const startNewChat = () => {
     setMessages([]);
     chatSessionRef.current = null;
     setInteractionCount(0);
     setIntentDrift(0);
     setEthicalStatus('idle');
+    setActiveArtifact(null);
   };
   
   const handleSetIsAdvisorMode = (value: boolean) => {
@@ -251,9 +258,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const stream = await chatSessionRef.current.sendMessageStream({ message: messageParts });
 
+      let fullText = "";
       for await (const chunk of stream) {
         if (chunk.text) {
-            setMessages((prev) => prev.map(msg => msg.id === messageId ? {...msg, text: msg.text + chunk.text, isThinking: false} : msg));
+            fullText += chunk.text;
+            
+            // Parse artifacts on the fly
+            const artifacts = parseArtifacts(fullText);
+            if (artifacts.length > 0) {
+                setActiveArtifact(artifacts[artifacts.length - 1]);
+            }
+
+            setMessages((prev) => prev.map(msg => msg.id === messageId ? {...msg, text: fullText, isThinking: false, artifacts} : msg));
         }
       }
     } catch (error) {
@@ -300,9 +316,17 @@ Formulate your final, structured response based on the analysis.
 
       const stream = await chatSessionRef.current.sendMessageStream({ message: messageParts });
 
+      let fullText = "";
       for await (const chunk of stream) {
          if (chunk.text) {
-            setMessages((prev) => prev.map(msg => msg.id === finalMessageId ? {...msg, text: msg.text + chunk.text} : msg));
+            fullText += chunk.text;
+            
+            const artifacts = parseArtifacts(fullText);
+            if (artifacts.length > 0) {
+                setActiveArtifact(artifacts[artifacts.length - 1]);
+            }
+
+            setMessages((prev) => prev.map(msg => msg.id === finalMessageId ? {...msg, text: fullText, artifacts} : msg));
         }
       }
     } catch (error) {
@@ -528,6 +552,33 @@ Formulate your final, structured response based on the analysis.
     }
   };
 
+  const parseArtifacts = (text: string): Artifact[] => {
+      const artifacts: Artifact[] = [];
+      const artifactRegex = /<artifact\s+id="([^"]+)"\s+type="([^"]+)"\s+title="([^"]+)">([\s\S]*?)<\/artifact>/g;
+      
+      let match;
+      while ((match = artifactRegex.exec(text)) !== null) {
+          let content = match[4].trim();
+          let language = undefined;
+          
+          if (match[2] === 'code') {
+              const codeMatch = content.match(/^```(\w+)?\n([\s\S]*?)```$/);
+              if (codeMatch) {
+                  language = codeMatch[1];
+                  content = codeMatch[2].trim();
+              }
+          }
+          
+          artifacts.push({
+              id: match[1],
+              type: match[2] as 'code' | 'text/markdown',
+              title: match[3],
+              content,
+              language
+          });
+      }
+      return artifacts;
+  };
 
   return (
     <AppContext.Provider value={{ 
@@ -556,7 +607,9 @@ Formulate your final, structured response based on the analysis.
         satisfactionScore,
         analysisMode,
         setAnalysisMode,
-        requestScenarioSimulation
+        requestScenarioSimulation,
+        activeArtifact,
+        setActiveArtifact
     }}>
       {children}
     </AppContext.Provider>

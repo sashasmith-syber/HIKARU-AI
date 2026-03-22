@@ -77,11 +77,7 @@ body {
 @media (min-width: 860px) {
     .chat-container {
         border: 1px solid var(--border-color);
-        max-height: 95vh;
         border-radius: 8px;
-    }
-    .app-wrapper {
-        padding: 2.5vh 0;
     }
 }
 
@@ -798,6 +794,158 @@ input:checked + .slider:before {
 .modal-body {
     padding: 0.5rem 1.5rem 1.5rem 1.5rem;
     overflow-y: auto;
+}
+
+/* Main Content & Artifact Viewer */
+.main-content {
+  display: flex;
+  flex-direction: row;
+  height: calc(100% - 40px); /* subtract status bar height */
+  width: 100%;
+  overflow: hidden;
+  padding: 2.5vh 1rem;
+  gap: 1rem;
+  justify-content: center;
+  flex: 1;
+}
+
+.main-content.has-artifact .chat-container {
+  max-width: 450px;
+  margin: 0;
+}
+
+.artifact-container {
+  flex: 1;
+  max-width: 800px;
+  background-color: rgba(0,0,0,0.5);
+  backdrop-filter: blur(5px);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.artifact-viewer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.artifact-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background-color: rgba(0,0,0,0.5);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.artifact-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--primary-text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.artifact-tabs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.tab-btn {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--secondary-text-color);
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--font-primary);
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.tab-btn:hover {
+  color: var(--primary-text-color);
+}
+
+.tab-btn.active {
+  background-color: rgba(255,255,255,0.1);
+  color: var(--primary-text-color);
+  border-color: var(--border-color);
+}
+
+.artifact-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.analyze-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: rgba(191, 0, 255, 0.2);
+  border: 1px solid var(--accent-thinking);
+  color: var(--primary-text-color);
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--font-primary);
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.analyze-btn:hover {
+  background: rgba(191, 0, 255, 0.4);
+  box-shadow: var(--text-glow-thinking);
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: var(--secondary-text-color);
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 0.25rem;
+}
+
+.close-btn:hover {
+  color: var(--accent-danger);
+}
+
+.artifact-body {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+}
+
+.artifact-code {
+  padding: 1rem;
+  margin: 0;
+  font-family: var(--font-secondary);
+  font-size: 13px;
+  color: #e0e0e0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.artifact-preview {
+  width: 100%;
+  height: 100%;
+  background-color: #fff;
+}
+
+.artifact-preview iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
 }
 .prompt-category {
     margin-top: 1.5rem;

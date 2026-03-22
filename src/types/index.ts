@@ -6,6 +6,15 @@ export interface Scenario {
   probability: number;
   analysis: string;
 }
+
+export interface Artifact {
+  id: string;
+  type: 'code' | 'text/markdown';
+  title: string;
+  content: string;
+  language?: string;
+}
+
 export interface Message {
   id: string;
   role: "user" | "model";
@@ -18,4 +27,5 @@ export interface Message {
   scenarios?: Scenario[];
   isSimulating?: boolean;
   isThinking?: boolean;
+  artifacts?: Artifact[];
 }
