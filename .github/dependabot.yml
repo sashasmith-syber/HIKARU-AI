@@ -1,0 +1,130 @@
+# .github/dependabot.yml
+# HIKARU-AI / AIT Enterprise — Dependabot Configuration
+# Covers: npm (TypeScript), pip (Python), GitHub Actions
+# Schedule: weekly on Monday 03:00 UTC (low-traffic window)
+
+version: 2
+
+updates:
+
+  # ── npm (TypeScript / Node repos) ────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "Europe/Warsaw"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "npm"
+      - "security"
+    commit-message:
+      prefix: "fix(deps)"
+      prefix-development: "chore(deps-dev)"
+      include: "scope"
+    reviewers:
+      - "sashasmith-syber"
+    assignees:
+      - "sashasmith-syber"
+    # Security updates fire immediately, regardless of schedule
+    # (this is the default — listed explicitly for clarity)
+    ignore:
+      # Pin major version bumps for core runtime deps — review manually
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+    groups:
+      # Batch minor/patch Radix UI updates into one PR
+      radix-ui:
+        patterns:
+          - "@radix-ui/*"
+        update-types:
+          - "minor"
+          - "patch"
+      # Batch all ESLint tooling together
+      eslint-tooling:
+        patterns:
+          - "eslint*"
+          - "@typescript-eslint/*"
+        update-types:
+          - "minor"
+          - "patch"
+      # Batch Vite / build tool patches
+      build-tooling:
+        patterns:
+          - "vite"
+          - "vitest"
+          - "esbuild"
+          - "@vitejs/*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # ── pip (Python repos: PROTOS-1, nexus_spider_agent, hybrid-vcs) ──
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "Europe/Warsaw"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "python"
+      - "security"
+    commit-message:
+      prefix: "fix(deps)"
+      prefix-development: "chore(deps-dev)"
+      include: "scope"
+    reviewers:
+      - "sashasmith-syber"
+    assignees:
+      - "sashasmith-syber"
+    groups:
+      security-stack:
+        patterns:
+          - "cryptography"
+          - "pyjwt"
+          - "bcrypt"
+        update-types:
+          - "minor"
+          - "patch"
+      supabase-stack:
+        patterns:
+          - "supabase"
+          - "postgrest-py"
+          - "gotrue"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # ── GitHub Actions ────────────────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "Europe/Warsaw"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+      - "security"
+    commit-message:
+      prefix: "chore(ci)"
+      include: "scope"
+    reviewers:
+      - "sashasmith-syber"
+    groups:
+      # Keep all GitHub official actions together
+      github-actions:
+        patterns:
+          - "actions/*"
+        update-types:
+          - "minor"
+          - "patch"
