@@ -1,0 +1,95 @@
+# .github/workflows/stainless-sync.yml
+# Syncs OpenAPI spec → Stainless on every push to main.
+# Stainless auto-generates and pushes the TypeScript SDK.
+#
+# Required secrets (set in repo Settings → Secrets):
+#   STAINLESS_API_KEY   — from app.stainless.com → Settings → API Keys
+#
+# Optional secrets (for audit notifications):
+#   SLACK_WEBHOOK_URL   — post SDK release notifications to your channel
+
+name: Stainless SDK Sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'openapi.yml'
+      - 'stainless.yml'
+  workflow_dispatch:           # manual trigger from GitHub UI
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate-spec:
+    name: Validate OpenAPI spec
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install validator
+        run: npm install -g @redocly/cli@latest
+
+      - name: Lint OpenAPI spec
+        run: redocly lint openapi.yml --format=github-actions
+
+  sync-stainless:
+    name: Push spec to Stainless
+    needs: validate-spec
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Upload OpenAPI spec to Stainless
+        uses: stainless-api/upload-openapi-spec-action@main
+        with:
+          stainless_api_key: ${{ secrets.STAINLESS_API_KEY }}
+          project_name: hikaru-ai
+          input_path: openapi.yml
+          config_path: stainless.yml      # optional but enables transform validation
+
+      - name: Notify Slack on SDK release
+        if: success() && env.SLACK_WEBHOOK_URL != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -s -X POST "$SLACK_WEBHOOK_URL" \
+            -H 'Content-Type: application/json' \
+            -d '{
+              "text": "✅ HIKARU AI SDK sync triggered — Stainless will push updated TypeScript SDK to `hikaru-ai-typescript-sdk` shortly.",
+              "username": "HIKARU Deploy",
+              "icon_emoji": ":robot_face:"
+            }'
+
+  security-audit:
+    name: Security audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --audit-level=high
+
+      - name: Check for secrets in code
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.before }}
+          head: ${{ github.event.after }}
+          extra_args: --only-verified
