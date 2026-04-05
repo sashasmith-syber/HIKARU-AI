@@ -1,0 +1,16 @@
+# HIKARU-AI CODEOWNERS
+# Global code ownership - sashasmith-syber reviews all
+* @sashasmith-syber
+
+# Core source files
+src/ @sashasmith-syber
+
+# OpenAPI + Stainless specs
+openapi.yml @sashasmith-syber
+stainless.yml @sashasmith-syber
+
+# GitHub Actions & Security workflows
+.github/ @sashasmith-syber
+
+# Security documentation
+SECURITY.md @sashasmith-syber
