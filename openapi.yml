@@ -383,7 +383,7 @@ components:
 
   responses:
     Unauthorized:
-      description: Missing or invalid API key
+      description: Missing or invalid credentials
       content:
         application/json:
           schema:
@@ -564,18 +564,22 @@ components:
         object:
           type: string
           enum: [chat.completion.chunk]
-        delta:
-          type: object
-          properties:
-            role:
-              type: string
-            content:
-              type: string
-        finish_reason:
-          type: string
-          oneOf:
-            - type: string
-            - type: "null"
+        choices:
+          type: array
+          items:
+            type: object
+            properties:
+              index:
+                type: integer
+              delta:
+                type: object
+                properties:
+                  role:
+                    type: string
+                  content:
+                    type: string
+              finish_reason:
+                type: [string, "null"]
 
     CompletionRequest:
       type: object
@@ -675,10 +679,7 @@ components:
           minimum: 0
           maximum: 10
         corrected_claim:
-          type: string
-          oneOf:
-            - type: string
-            - type: "null"
+          type: [string, "null"]
         citations:
           type: array
           items:
@@ -723,10 +724,7 @@ components:
         has_more:
           type: boolean
         next_cursor:
-          type: string
-          oneOf:
-            - type: string
-            - type: "null"
+          type: [string, "null"]
 
     PersonaCreateRequest:
       type: object
@@ -827,10 +825,7 @@ components:
         has_more:
           type: boolean
         next_cursor:
-          type: string
-          oneOf:
-            - type: string
-            - type: "null"
+          type: [string, "null"]
 
     # ── Usage ──
     UsageResponse:
