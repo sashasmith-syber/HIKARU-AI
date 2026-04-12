@@ -1,0 +1,862 @@
+openapi: 3.1.0
+info:
+  title: HIKARU AI API
+  version: 5.0.0
+  description: |
+    Persona-driven AI inference engine with real-time grounded search,
+    constitutional evaluation, and multi-agent orchestration.
+    Built on the SIC (Synthetic Intelligence Collective) architecture.
+    
+    光即知識 — Light is Knowledge.
+  contact:
+    name: Sasha Smith / AIT
+    url: https://spideragent-ssmith.org
+  license:
+    name: Proprietary
+    identifier: LicenseRef-HIKARU-PROPRIETARY
+
+servers:
+  - url: https://api.hikaruai.dev/v1
+    description: Production
+  - url: https://staging.api.hikaruai.dev/v1
+    description: Staging
+
+security:
+  - ApiKeyAuth: []
+  - BearerAuth: []
+
+tags:
+  - name: inference
+    description: Core persona-driven inference and completions
+  - name: evaluation
+    description: Constitutional evaluation and fact verification
+  - name: personas
+    description: Persona management and configuration
+  - name: search
+    description: Grounded real-time search via Sonar
+  - name: audit
+    description: Security and governance audit logs
+  - name: usage
+    description: Usage metrics and quota management
+
+paths:
+
+  # ─── INFERENCE ────────────────────────────────────────────────
+  /chat/completions:
+    post:
+      operationId: createChatCompletion
+      summary: Create a persona-driven chat completion
+      description: |
+        OpenAI-compatible completions endpoint with HIKARU persona overlay.
+        Routes through Perplexity Sonar for grounded responses when
+        `search_mode` is enabled.
+      tags: [inference]
+      x-stainless-streaming: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatCompletionRequest'
+      responses:
+        '200':
+          description: Chat completion response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatCompletionResponse'
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/ChatCompletionChunk'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /completions:
+    post:
+      operationId: createCompletion
+      summary: Raw text completion with persona context
+      tags: [inference]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompletionRequest'
+      responses:
+        '200':
+          description: Completion response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompletionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  # ─── EVALUATION ───────────────────────────────────────────────
+  /evaluate:
+    post:
+      operationId: evaluateResponse
+      summary: Run GUARDIAN_STRATEGIST constitutional evaluation
+      description: |
+        Scores an AI response across four HIKARU axiom-aligned dimensions:
+        fact accuracy (via Perplexity Sonar), domain alignment, sanctuary
+        integrity (safety audit), and agentic execution quality.
+      tags: [evaluation]
+      x-stainless-tier: pro
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvaluationRequest'
+      responses:
+        '200':
+          description: Evaluation result with dimensional scores
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /fact-check:
+    post:
+      operationId: factCheck
+      summary: Real-time fact verification via Perplexity Sonar
+      description: |
+        Verifies technical or factual claims against live web data.
+        Returns a confidence score, cited sources, and a corrected
+        statement if the claim is inaccurate.
+      tags: [evaluation]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FactCheckRequest'
+      responses:
+        '200':
+          description: Fact-check result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FactCheckResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ─── PERSONAS ─────────────────────────────────────────────────
+  /personas:
+    get:
+      operationId: listPersonas
+      summary: List available HIKARU personas
+      tags: [personas]
+      parameters:
+        - name: tier
+          in: query
+          schema:
+            type: string
+            enum: [free, pro, enterprise]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: after
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Paginated persona list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonaList'
+
+    post:
+      operationId: createPersona
+      summary: Create a custom persona
+      tags: [personas]
+      x-stainless-tier: enterprise
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonaCreateRequest'
+      responses:
+        '201':
+          description: Created persona
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Persona'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /personas/{personaId}:
+    get:
+      operationId: getPersona
+      summary: Retrieve a persona by ID
+      tags: [personas]
+      parameters:
+        - $ref: '#/components/parameters/PersonaId'
+      responses:
+        '200':
+          description: Persona details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Persona'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      operationId: updatePersona
+      summary: Update a custom persona
+      tags: [personas]
+      x-stainless-tier: enterprise
+      parameters:
+        - $ref: '#/components/parameters/PersonaId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonaUpdateRequest'
+      responses:
+        '200':
+          description: Updated persona
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Persona'
+
+    delete:
+      operationId: deletePersona
+      summary: Delete a custom persona
+      tags: [personas]
+      x-stainless-tier: enterprise
+      parameters:
+        - $ref: '#/components/parameters/PersonaId'
+      responses:
+        '204':
+          description: Deleted
+
+  # ─── SEARCH ───────────────────────────────────────────────────
+  /search:
+    post:
+      operationId: search
+      summary: Grounded web search via Perplexity Sonar
+      description: |
+        Direct access to the Sonar search layer with HIKARU persona
+        context injection. Returns ranked results with citations.
+      tags: [search]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+      responses:
+        '200':
+          description: Search results with citations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  # ─── AUDIT ────────────────────────────────────────────────────
+  /audit/logs:
+    get:
+      operationId: listAuditLogs
+      summary: Retrieve PROTOS-1 Black Box audit logs
+      tags: [audit]
+      x-stainless-tier: enterprise
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+        - name: after
+          in: query
+          schema:
+            type: string
+        - name: protocol
+          in: query
+          schema:
+            type: string
+            example: GUARDIAN_STRATEGIST_EVAL_v2.1
+      responses:
+        '200':
+          description: Audit log entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ─── USAGE ────────────────────────────────────────────────────
+  /usage:
+    get:
+      operationId: getUsage
+      summary: Get current period usage and quota
+      tags: [usage]
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [day, month]
+            default: month
+      responses:
+        '200':
+          description: Usage metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsageResponse'
+
+  # ─── HEALTH ───────────────────────────────────────────────────
+  /health:
+    get:
+      operationId: health
+      summary: Service health check
+      security: []
+      tags: [inference]
+      responses:
+        '200':
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok, degraded]
+                  version:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+
+# ─── COMPONENTS ────────────────────────────────────────────────
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: HIKARU API key — obtain from dashboard.hikaruai.dev
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    PersonaId:
+      name: personaId
+      in: path
+      required: true
+      schema:
+        type: string
+        example: hikaru-v5
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid credentials
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Tier does not permit this operation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    RateLimited:
+      description: Rate limit exceeded
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ValidationError:
+      description: Request body validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    # ── Primitives ──
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: rate_limit_exceeded
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+
+    Citation:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+        title:
+          type: string
+        snippet:
+          type: string
+
+    UsageTokens:
+      type: object
+      properties:
+        prompt_tokens:
+          type: integer
+        completion_tokens:
+          type: integer
+        total_tokens:
+          type: integer
+        search_units:
+          type: integer
+          description: Perplexity Sonar search units consumed
+
+    # ── Chat / Completions ──
+    ChatMessage:
+      type: object
+      required: [role, content]
+      properties:
+        role:
+          type: string
+          enum: [system, user, assistant]
+        content:
+          type: string
+
+    ChatCompletionRequest:
+      type: object
+      required: [model, messages]
+      properties:
+        model:
+          type: string
+          enum:
+            - hikaru-sonar           # free tier — sonar grounded
+            - hikaru-sonar-pro       # pro tier  — sonar-pro
+            - hikaru-reasoning       # pro tier  — sonar-reasoning-pro
+            - hikaru-deep-research   # enterprise — sonar-deep-research
+          example: hikaru-sonar-pro
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+        persona_id:
+          type: string
+          default: hikaru-v5
+          description: HIKARU persona to apply as system context overlay
+        stream:
+          type: boolean
+          default: false
+        search_mode:
+          type: boolean
+          default: true
+          description: Route through Perplexity Sonar for grounded responses
+        search_recency:
+          type: string
+          enum: [hour, day, week, month]
+          description: Restrict Sonar search to content within this window
+        search_domain_filter:
+          type: array
+          items:
+            type: string
+          description: Restrict search to specific domains
+          example: [arxiv.org, github.com]
+        temperature:
+          type: number
+          minimum: 0
+          maximum: 2
+          default: 0.7
+        max_tokens:
+          type: integer
+          default: 1024
+
+    ChatCompletionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+          enum: [chat.completion]
+        created:
+          type: integer
+        model:
+          type: string
+        persona_id:
+          type: string
+        choices:
+          type: array
+          items:
+            type: object
+            properties:
+              index:
+                type: integer
+              message:
+                $ref: '#/components/schemas/ChatMessage'
+              finish_reason:
+                type: string
+        usage:
+          $ref: '#/components/schemas/UsageTokens'
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Citation'
+        axiom_seal:
+          type: string
+          description: HIKARU axiom applied to this response
+          example: "光即知識"
+
+    ChatCompletionChunk:
+      type: object
+      description: SSE streaming chunk
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+          enum: [chat.completion.chunk]
+        choices:
+          type: array
+          items:
+            type: object
+            properties:
+              index:
+                type: integer
+              delta:
+                type: object
+                properties:
+                  role:
+                    type: string
+                  content:
+                    type: string
+              finish_reason:
+                type: [string, "null"]
+
+    CompletionRequest:
+      type: object
+      required: [model, prompt]
+      properties:
+        model:
+          type: string
+        prompt:
+          type: string
+        persona_id:
+          type: string
+          default: hikaru-v5
+        max_tokens:
+          type: integer
+        temperature:
+          type: number
+
+    CompletionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        usage:
+          $ref: '#/components/schemas/UsageTokens'
+
+    # ── Evaluation ──
+    EvaluationRequest:
+      type: object
+      required: [prompt, response]
+      properties:
+        prompt:
+          type: string
+          description: The original user query
+        response:
+          type: string
+          description: The AI response to evaluate
+        category:
+          type: string
+          enum: [general, technical, creative, security]
+          default: general
+        protocol:
+          type: string
+          default: GUARDIAN_STRATEGIST_EVAL_v2.1
+
+    EvaluationResponse:
+      type: object
+      properties:
+        overall_score:
+          type: number
+          minimum: 0
+          maximum: 10
+        dimensions:
+          type: object
+          properties:
+            fact_accuracy:
+              type: number
+            domain_alignment:
+              type: number
+            sanctuary_integrity:
+              type: number
+            agentic_execution:
+              type: number
+        protocol:
+          type: string
+        axiom_seal:
+          type: string
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Citation'
+        timestamp:
+          type: string
+          format: date-time
+
+    FactCheckRequest:
+      type: object
+      required: [claim]
+      properties:
+        claim:
+          type: string
+          maxLength: 2000
+        context:
+          type: string
+        recency:
+          type: string
+          enum: [hour, day, week, month]
+
+    FactCheckResponse:
+      type: object
+      properties:
+        verified:
+          type: boolean
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 10
+        corrected_claim:
+          type: [string, "null"]
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Citation'
+        model_used:
+          type: string
+
+    # ── Personas ──
+    Persona:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        tier:
+          type: string
+          enum: [free, pro, enterprise]
+        axioms:
+          type: array
+          items:
+            type: string
+        system_prompt_preview:
+          type: string
+          description: First 200 chars of the system prompt
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    PersonaList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Persona'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: [string, "null"]
+
+    PersonaCreateRequest:
+      type: object
+      required: [name, system_prompt]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        system_prompt:
+          type: string
+        axioms:
+          type: array
+          items:
+            type: string
+
+    PersonaUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        system_prompt:
+          type: string
+        axioms:
+          type: array
+          items:
+            type: string
+
+    # ── Search ──
+    SearchRequest:
+      type: object
+      required: [query]
+      properties:
+        query:
+          type: string
+        persona_id:
+          type: string
+        model:
+          type: string
+          enum: [sonar, sonar-pro, sonar-deep-research]
+          default: sonar-pro
+        recency:
+          type: string
+          enum: [hour, day, week, month]
+        domain_filter:
+          type: array
+          items:
+            type: string
+        max_results:
+          type: integer
+          default: 10
+          maximum: 50
+
+    SearchResponse:
+      type: object
+      properties:
+        answer:
+          type: string
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Citation'
+        model_used:
+          type: string
+        usage:
+          $ref: '#/components/schemas/UsageTokens'
+
+    # ── Audit ──
+    AuditLogEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        protocol:
+          type: string
+        operator_query_preview:
+          type: string
+        final_score:
+          type: number
+        axiom_seal:
+          type: string
+        api_key_prefix:
+          type: string
+          description: First 8 chars of the API key used
+
+    AuditLogList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLogEntry'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: [string, "null"]
+
+    # ── Usage ──
+    UsageResponse:
+      type: object
+      properties:
+        period:
+          type: string
+        tier:
+          type: string
+          enum: [free, pro, enterprise]
+        requests:
+          type: object
+          properties:
+            used:
+              type: integer
+            limit:
+              type: integer
+        tokens:
+          type: object
+          properties:
+            used:
+              type: integer
+            limit:
+              type: integer
+        search_units:
+          type: object
+          properties:
+            used:
+              type: integer
+            limit:
+              type: integer
+        reset_at:
+          type: string
+          format: date-time
