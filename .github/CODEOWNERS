@@ -7,7 +7,6 @@ src/ @sashasmith-syber
 
 # OpenAPI + Stainless specs
 openapi.yml @sashasmith-syber
-stainless.yml @sashasmith-syber
 
 # GitHub Actions & Security workflows
 .github/ @sashasmith-syber
