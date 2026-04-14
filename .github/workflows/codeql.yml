@@ -28,7 +28,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: ['javascript-typescript', 'python']
+        language: ['javascript-typescript']
         # Add 'actions' if you have GitHub Actions workflows to scan
 
     steps:
