@@ -66,12 +66,7 @@ jobs:
 
       - name: Install dependencies (TypeScript only)
         if: matrix.language == 'javascript-typescript'
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            echo "No package-lock.json found, skipping install"
-          fi
+        run: npm ci
 
       # Python: setup for accurate analysis
       - name: Setup Python (Python only)
