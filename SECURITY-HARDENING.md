@@ -1,6 +1,6 @@
 # Security Hardening Notes
 
-This repository has had prior automation-generated commits in the past (including Lovable-related bots). Current hardening focuses on reducing silent config/secrets risk with explicit, reviewable changes.
+This repository previously had automation-generated commits (including Lovable-related bots). Current hardening focuses on reducing silent config/secrets risk with explicit, reviewable changes.
 
 ## Secrets and `.env` hygiene
 
