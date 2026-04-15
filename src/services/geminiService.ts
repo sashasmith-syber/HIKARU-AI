@@ -1,7 +1,13 @@
 
 import { GoogleGenAI, LiveServerMessage, Modality, Blob, Chat, Type, Part } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
+
+if (!geminiApiKey) {
+  throw new Error("Missing VITE_GEMINI_API_KEY. Set it via environment variables and never commit API keys to git.");
+}
+
+const ai = new GoogleGenAI({ apiKey: geminiApiKey });
 
 // FIX: The `LiveSession` type is not exported from "@google/genai".
 // It is inferred from the return type of `ai.live.connect` to ensure type safety.
