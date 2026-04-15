@@ -12,9 +12,11 @@ If historical or external copies of secrets exist, the repository owner should r
 
 ## Runtime configuration
 
-- Runtime API credentials are expected from environment variables (for this app: `VITE_GEMINI_API_KEY`).
-- Do not hard-code API keys, project IDs, URLs, or bearer tokens in source files.
-- If Supabase/Stripe/Anthropic/Cloudflare/OpenAI integrations are added or updated, configure them through environment variables and GitHub encrypted secrets only.
+- Runtime client configuration is expected from environment variables (for this app: `VITE_GEMINI_API_KEY`).
+- In a Vite/React app, `VITE_*` variables are exposed to the browser and inlined into the built bundle, so `VITE_GEMINI_API_KEY` must be treated as public at runtime, not as a confidential secret.
+- Do not hard-code API keys, project IDs, URLs, or bearer tokens in source files; for client-side values, use environment variables and apply provider-side restrictions and rotation as appropriate.
+- If a credential must remain secret, do not expose it via `VITE_*`; route requests through a backend/proxy that keeps the secret server-side.
+- If Supabase/Stripe/Anthropic/Cloudflare/OpenAI integrations are added or updated, configure client-exposed values through environment variables and store true server-side secrets in GitHub encrypted secrets or another secure secret manager.
 
 ## CI / workflow safety requirements
 
