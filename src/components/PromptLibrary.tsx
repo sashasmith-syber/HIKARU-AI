@@ -65,7 +65,19 @@ const PromptLibrary: React.FC<PromptLibraryProps> = ({ isOpen, onClose, onSelect
                     const uniqueKey = `${catIndex}-${pIndex}`;
                     const isCopied = copiedKey === uniqueKey;
                     return (
-                      <div key={pIndex} className="prompt-item" onClick={() => handlePromptClick(prompt.text)}>
+                      <div
+                        key={pIndex}
+                        className="prompt-item"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => handlePromptClick(prompt.text)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handlePromptClick(prompt.text);
+                          }
+                        }}
+                      >
                         <div className="prompt-content">
                           <h4>{prompt.title}</h4>
                           <p>{prompt.text.substring(0, 100)}...</p>
@@ -85,7 +97,7 @@ const PromptLibrary: React.FC<PromptLibraryProps> = ({ isOpen, onClose, onSelect
               </div>
             ))
           ) : (
-            <p style={{textAlign: 'center', color: 'var(--secondary-text-color)'}}>No prompts found.</p>
+            <p className="prompt-empty">No prompts found.</p>
           )}
         </div>
       </div>

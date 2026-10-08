@@ -12,6 +12,19 @@ dist
 dist-ssr
 *.local
 
+# Secrets and local configuration. .env.example is the only committed template.
+.env
+.env.*
+!.env.example
+config.yaml
+config.yml
+secrets.json
+secrets.yaml
+secrets.yml
+credentials.json
+*.pem
+*.key
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

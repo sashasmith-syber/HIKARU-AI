@@ -15,6 +15,8 @@ View your app in AI Studio: https://ai.studio/apps/797b44e5-ba4c-4716-80e3-4d365
 
 1. Install dependencies:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+2. Copy [.env.example](.env.example) to `.env.local` and set `GEMINI_API_KEY` there. The Vite server reads that value. It is not injected into browser code, and it must not use a `VITE_` prefix.
 3. Run the app:
    `npm run dev`
+
+The dev server listens on `127.0.0.1:3000`. Chat, image, and JSON calls go to same-origin `/api/gemini/*` routes. Live voice still connects from the browser to Gemini, using a short-lived token from `/api/gemini/live-token`. A static build has no Gemini backend; those routes exist only while the Vite server is running.

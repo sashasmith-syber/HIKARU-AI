@@ -37,10 +37,10 @@ const StatusBar: React.FC = () => {
                     {getEthicalStatusIcon()}
                     <span>Ethical Review</span>
                 </div>
-                 <div className="status-item clickable" onClick={toggleOptimizationModal} title="Open System Optimization Panel">
+                 <button type="button" className="status-item clickable" onClick={toggleOptimizationModal} title="Open System Optimization Panel">
                     <span className={`icon ${getStatusColor()}`}>⚙️</span>
                     <span>System Status</span>
-                </div>
+                </button>
             </div>
             <div className="status-section">
                 <div className="status-item" title={`Session Interaction Count: ${interactionCount}`}>

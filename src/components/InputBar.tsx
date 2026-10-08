@@ -26,23 +26,33 @@ const InputBar: React.FC = () => {
   const [attachment, setAttachment] = useState<File | null>(null);
   const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
   const [isPromptLibraryVisible, setIsPromptLibraryVisible] = useState<boolean>(false);
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const acceptedImageTypes = ["image/png", "image/jpeg", "image/webp", "image/gif"];
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setAttachment(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAttachmentPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+    if (!acceptedImageTypes.includes(file.type)) {
+      setAttachment(null);
+      setAttachmentPreview(null);
+      setAttachmentError("Use a PNG, JPEG, WebP, or GIF image.");
+      e.target.value = "";
+      return;
     }
+    setAttachmentError(null);
+    setAttachment(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAttachmentPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const removeAttachment = () => {
     setAttachment(null);
     setAttachmentPreview(null);
+    setAttachmentError(null);
     if(fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -59,6 +69,7 @@ const InputBar: React.FC = () => {
     setInput("");
     setAttachment(null);
     setAttachmentPreview(null);
+    setAttachmentError(null);
     if(fileInputRef.current) {
         fileInputRef.current.value = "";
     }
@@ -82,36 +93,37 @@ const InputBar: React.FC = () => {
             </button>
           </div>
         )}
+        {attachmentError && <p className="attachment-error" role="alert">{attachmentError}</p>}
         <div className="input-controls">
             <div className="mode-toggle-group">
-              <div className="mode-toggle">
+              <label className="mode-toggle">
                   <span>Efficiency</span>
-                  <label className="switch">
+                  <span className="switch">
                   <input type="checkbox" checked={isEfficiencyMode} onChange={() => setIsEfficiencyMode(!isEfficiencyMode)} disabled={!isUIActive} />
                   <span className="slider"></span>
-                  </label>
-              </div>
-              <div className="mode-toggle">
+                  </span>
+              </label>
+              <label className="mode-toggle">
                   <span>Advisor</span>
-                  <label className="switch">
+                  <span className="switch">
                   <input type="checkbox" checked={isAdvisorMode} onChange={() => setIsAdvisorMode(!isAdvisorMode)} disabled={!isUIActive} />
                   <span className="slider"></span>
-                  </label>
-              </div>
-              <div className="mode-toggle thinking-mode">
+                  </span>
+              </label>
+              <label className="mode-toggle thinking-mode">
                   <span>Thinking</span>
-                  <label className="switch">
+                  <span className="switch">
                   <input type="checkbox" checked={isThinkingMode} onChange={() => setIsThinkingMode(!isThinkingMode)} disabled={!isUIActive} />
                   <span className="slider"></span>
-                  </label>
-              </div>
-              <div className="mode-toggle">
+                  </span>
+              </label>
+              <label className="mode-toggle">
                   <span>Security</span>
-                  <label className="switch">
+                  <span className="switch">
                   <input type="checkbox" checked={isSecurityMode} onChange={() => setIsSecurityMode(!isSecurityMode)} disabled={!isUIActive} />
                   <span className="slider"></span>
-                  </label>
-              </div>
+                  </span>
+              </label>
             </div>
              <div className="analysis-mode-selector">
                 <label htmlFor="analysis-mode">Analysis:</label>
@@ -140,7 +152,7 @@ const InputBar: React.FC = () => {
               type="file"
               ref={fileInputRef}
               onChange={handleFileChange}
-              accept="image/*"
+              accept="image/png,image/jpeg,image/webp,image/gif"
               style={{ display: "none" }}
               id="file-input"
             />
@@ -153,7 +165,12 @@ const InputBar: React.FC = () => {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleSendClick()}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleSendClick();
+                }
+              }}
               placeholder={isLiveSessionActive ? "Live session active..." : (isThinkingMode ? "Model is in Deep Thinking mode..." : "Articulate your query, OPERATOR...")}
               aria-label="Your message to Hikaru"
               disabled={!isUIActive}
