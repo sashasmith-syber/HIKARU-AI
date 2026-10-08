@@ -11,6 +11,9 @@ node_modules
 dist
 dist-ssr
 *.local
+.dev.vars
+.wrangler/
+worker-configuration.d.ts
 
 # Secrets and local configuration. .env.example is the only committed template.
 .env

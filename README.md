@@ -19,4 +19,8 @@ View your app in AI Studio: https://ai.studio/apps/797b44e5-ba4c-4716-80e3-4d365
 3. Run the app:
    `npm run dev`
 
-The dev server listens on `127.0.0.1:3000`. Chat, image, and JSON calls go to same-origin `/api/gemini/*` routes. Live voice still connects from the browser to Gemini, using a short-lived token from `/api/gemini/live-token`. A static build has no Gemini backend; those routes exist only while the Vite server is running.
+The dev server listens on `127.0.0.1:3000`. Chat, image, and JSON calls go to same-origin `/api/gemini/*` routes. Live voice still connects from the browser to Gemini, using a short-lived token from `/api/gemini/live-token`.
+
+Local `npm run dev` serves those routes with Vite middleware. That middleware is not the production backend. Cloudflare Pages serves the same routes from `functions/api/gemini/[[path]].ts`. `GEMINI_API_KEY` is a Pages secret binding and must not use a `VITE_` prefix.
+
+Pages generation calls are limited to 30 per minute, and live-token calls to 6 per minute, per connecting IP. Cloudflare applies that limit separately in each location, and the counters are eventually consistent, so this is not a global spend cap. The Vite process keeps its own in-memory counters for local development only. A missing limit binding fails closed. A static host without these Pages Functions does not serve the API.

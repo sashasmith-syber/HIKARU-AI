@@ -1,4 +1,4 @@
-import { Modality } from "@google/genai";
+import { Modality } from "@google/genai/web";
 import { HIKARU_LIVE_PERSONA } from "./personas";
 
 export const LIVE_MODEL = "gemini-2.5-flash-native-audio-preview-09-2025";

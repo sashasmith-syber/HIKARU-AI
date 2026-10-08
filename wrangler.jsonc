@@ -1,0 +1,43 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "hikaruai",
+  "account_id": "1ee4dd11994c29e19909da7eae2ad434",
+  "pages_build_output_dir": "./dist",
+  "compatibility_date": "2026-10-08",
+  "compatibility_flags": ["nodejs_compat"],
+  "secrets": {
+    "required": ["GEMINI_API_KEY"]
+  },
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.01
+    }
+  },
+  // Cloudflare rate limits are enforced per location and are eventually consistent.
+  // They are not a global spend cap. The same namespace is shared by every Worker
+  // on this account that reuses these namespace ids.
+  "ratelimits": [
+    {
+      "name": "GEMINI_GENERATION_LIMIT",
+      "namespace_id": "84173601",
+      "simple": {
+        "limit": 30,
+        "period": 60
+      }
+    },
+    {
+      "name": "GEMINI_LIVE_TOKEN_LIMIT",
+      "namespace_id": "84173602",
+      "simple": {
+        "limit": 6,
+        "period": 60
+      }
+    }
+  ]
+}
