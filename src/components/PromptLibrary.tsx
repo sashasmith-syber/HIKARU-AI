@@ -72,6 +72,7 @@ const PromptLibrary: React.FC<PromptLibraryProps> = ({ isOpen, onClose, onSelect
                         tabIndex={0}
                         onClick={() => handlePromptClick(prompt.text)}
                         onKeyDown={(e) => {
+                          if (e.target !== e.currentTarget) return;
                           if (e.key === "Enter" || e.key === " ") {
                             e.preventDefault();
                             handlePromptClick(prompt.text);

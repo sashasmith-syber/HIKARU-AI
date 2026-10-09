@@ -166,10 +166,9 @@ const InputBar: React.FC = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleSendClick();
-                }
+                if (e.key !== "Enter" || e.nativeEvent.isComposing || e.keyCode === 229) return;
+                e.preventDefault();
+                handleSendClick();
               }}
               placeholder={isLiveSessionActive ? "Live session active..." : (isThinkingMode ? "Model is in Deep Thinking mode..." : "Articulate your query, OPERATOR...")}
               aria-label="Your message to Hikaru"

@@ -158,10 +158,13 @@ function readBudget(value: unknown): number | undefined | null {
   return value;
 }
 
-function createClient(apiKey: string): GoogleGenAI | null {
+function createClient(apiKey: string, apiVersion?: string): GoogleGenAI | null {
   const key = apiKey.trim();
   if (!key) return null;
-  return new GoogleGenAI({ apiKey: key });
+  return new GoogleGenAI({
+    apiKey: key,
+    ...(apiVersion ? { httpOptions: { apiVersion } } : {}),
+  });
 }
 
 function sse(payload: Record<string, unknown>): Uint8Array {
@@ -343,7 +346,7 @@ async function handleLiveToken(
 ): Promise<Response> {
   const blocked = await guard(allow, "live-token");
   if (blocked) return blocked;
-  const ai = createClient(apiKey);
+  const ai = createClient(apiKey, "v1alpha");
   if (!ai) return json(503, { error: "The model service is not configured." });
 
   try {
@@ -357,6 +360,7 @@ async function handleLiveToken(
     const newSessionExpireTime = new Date(Date.now() + LIVE_NEW_SESSION_TTL_MS).toISOString();
     const issued = await ai.authTokens.create({
       config: {
+        httpOptions: { apiVersion: "v1alpha" },
         uses: LIVE_TOKEN_USES,
         expireTime,
         newSessionExpireTime,

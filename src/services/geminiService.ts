@@ -128,7 +128,15 @@ export const startChat = (
 
   return {
     async sendMessageStream({ message }) {
-      const contents = [...history, { role: "user" as const, parts: message }];
+      // The server rejects more than MAX_HISTORY contents. Reserve the last
+      // slot for this user message, and drop a leading model item so a trimmed
+      // history still starts on a user turn.
+      let prior = history;
+      if (prior.length + 1 > MAX_HISTORY) {
+        prior = prior.slice(-(MAX_HISTORY - 1));
+      }
+      if (prior[0]?.role === "model") prior = prior.slice(1);
+      const contents = [...prior, { role: "user" as const, parts: message }];
       const response = await postJson(API.stream, {
         model,
         systemInstruction,
