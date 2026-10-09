@@ -23,6 +23,7 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
           <button 
             className={`tab-btn ${activeTab === 'preview' ? 'active' : ''}`}
             onClick={() => setActiveTab('preview')}
+            aria-pressed={activeTab === 'preview'}
           >
             Preview
           </button>
@@ -30,6 +31,7 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
             <button 
               className={`tab-btn ${activeTab === 'code' ? 'active' : ''}`}
               onClick={() => setActiveTab('code')}
+              aria-pressed={activeTab === 'code'}
             >
               Code
             </button>
@@ -40,7 +42,7 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact }) => {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
             Analyze
           </button>
-          <button className="close-btn" onClick={() => setActiveArtifact(null)}>&times;</button>
+          <button className="close-btn" onClick={() => setActiveArtifact(null)} aria-label="Close artifact">&times;</button>
         </div>
       </div>
       <div className="artifact-body">

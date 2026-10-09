@@ -14,7 +14,7 @@ export const PROMPT_LIBRARY: PromptCategory[] = [
         prompts: [
             {
                 title: "Refactor for Readability",
-                text: "Refactor the following code snippet for improved readability and maintainability withoutaltering its functionality. Add comments where necessary to clarify complex logic.\n\n[PASTE CODE HERE]"
+                text: "Refactor the following code snippet for improved readability and maintainability without altering its functionality. Add comments where necessary to clarify complex logic.\n\n[PASTE CODE HERE]"
             },
             {
                 title: "Identify Code Smells",

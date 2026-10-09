@@ -10,11 +10,13 @@ import {
     createBlob, 
     decode, 
     decodeAudioData,
-    generateJsonContent
+    generateJsonContent,
+    type HikaruChat,
+    type LiveSession,
 } from "../services/geminiService";
-import { HIKARU_PERSONA, ADVISOR_PERSONA, HIKARU_EFFICIENCY_PERSONA, HIKARU_LIVE_PERSONA, SECURITY_REVIEW_PERSONA, ANALYSIS_MODE_PROMPTS } from "../constants/personas";
-import { LiveSession } from "../services/geminiService";
-import { Chat, Type } from "@google/genai";
+import { HIKARU_PERSONA, ADVISOR_PERSONA, HIKARU_EFFICIENCY_PERSONA, SECURITY_REVIEW_PERSONA, ANALYSIS_MODE_PROMPTS } from "../constants/personas";
+import { DEFAULT_TEXT_MODEL, EFFICIENCY_TEXT_MODEL, MAX_THINKING_BUDGET, THINKING_TEXT_MODEL } from "../constants/models";
+import { Type } from "@google/genai";
 
 type EthicalStatus = 'idle' | 'approved' | 'caution' | 'rejected';
 
@@ -62,7 +64,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isEfficiencyMode, setIsEfficiencyMode] = useState<boolean>(false);
   const [isSecurityMode, setIsSecurityMode] = useState<boolean>(false);
   const [isThinkingMode, setIsThinkingMode] = useState<boolean>(false);
-  const chatSessionRef = useRef<Chat | null>(null);
+  const chatSessionRef = useRef<HikaruChat | null>(null);
+  const submitLockRef = useRef(false);
 
   // Status Bar State
   const [ethicalStatus, setEthicalStatus] = useState<EthicalStatus>('idle');
@@ -179,59 +182,51 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const getModelConfig = () => {
     if (isThinkingMode) {
       return { 
-        model: 'gemini-3-pro-preview', 
-        config: { thinkingConfig: { thinkingBudget: 32768 } } 
+        model: THINKING_TEXT_MODEL, 
+        config: { thinkingConfig: { thinkingBudget: MAX_THINKING_BUDGET } } 
       };
     }
     if (isEfficiencyMode) {
-      return { model: 'gemini-2.5-flash-lite-latest', config: {} };
+      return { model: EFFICIENCY_TEXT_MODEL, config: {} };
     }
-    return { model: 'gemini-3-flash-preview', config: {} };
-  };
-
-  const checkApiKeyRequirement = async () => {
-    if (isThinkingMode) {
-        if (!(await (window as any).aistudio.hasSelectedApiKey())) {
-            await (window as any).aistudio.openSelectKey();
-            return true; // Assume success and proceed
-        }
-    }
-    return true;
+    return { model: DEFAULT_TEXT_MODEL, config: {} };
   };
 
   const sendMessage = async (input: string, attachment: File | null, attachmentPreview: string | null) => {
-    const userMessage: Message = { id: generateUniqueId(), role: "user", text: input, image: attachmentPreview || undefined };
-    
-    if (isImageGenerationRequest(input) && !attachment) {
-      setIsLoading(true);
-      const modelMessageId = generateUniqueId();
-      const modelMessage: Message = { id: modelMessageId, role: "model", text: "" };
-      setMessages((prev) => [...prev, userMessage, modelMessage]);
-      await handleImageGeneration(input, modelMessageId);
-      setIsLoading(false);
-      return;
-    }
-
-    await checkApiKeyRequirement();
+    if (submitLockRef.current) return;
+    submitLockRef.current = true;
     setIsLoading(true);
-    simulateStatusUpdate();
+    try {
+      const userMessage: Message = { id: generateUniqueId(), role: "user", text: input, image: attachmentPreview || undefined };
 
-    if (isAdvisorMode) {
-      const advisorMessage: Message = { id: generateUniqueId(), role: "model", text: "", title: "Advisor Analysis" };
-      const finalMessage: Message = { id: generateUniqueId(), role: "model", text: "", title: "Hikaru's Final Response" };
-      setMessages((prev) => [...prev, userMessage, advisorMessage, finalMessage]);
-      await handleAdvisorModeSend(input, attachment, HIKARU_PERSONA, advisorMessage.id, finalMessage.id);
-    } else {
-      let persona = HIKARU_PERSONA;
-      if (isEfficiencyMode) persona = HIKARU_EFFICIENCY_PERSONA;
-      if (isSecurityMode) persona = SECURITY_REVIEW_PERSONA;
+      if (isImageGenerationRequest(input) && !attachment) {
+        const modelMessageId = generateUniqueId();
+        const modelMessage: Message = { id: modelMessageId, role: "model", text: "" };
+        setMessages((prev) => [...prev, userMessage, modelMessage]);
+        await handleImageGeneration(input, modelMessageId);
+        return;
+      }
 
-      const modelMessage: Message = { id: generateUniqueId(), role: "model", text: "", isThinking: isThinkingMode };
-      setMessages((prev) => [...prev, userMessage, modelMessage]);
-      await handleStandardSend(input, attachment, persona, modelMessage.id);
+      simulateStatusUpdate();
+
+      if (isAdvisorMode) {
+        const advisorMessage: Message = { id: generateUniqueId(), role: "model", text: "", title: "Advisor Analysis" };
+        const finalMessage: Message = { id: generateUniqueId(), role: "model", text: "", title: "Hikaru's Final Response" };
+        setMessages((prev) => [...prev, userMessage, advisorMessage, finalMessage]);
+        await handleAdvisorModeSend(input, attachment, HIKARU_PERSONA, advisorMessage.id, finalMessage.id);
+      } else {
+        let persona = HIKARU_PERSONA;
+        if (isEfficiencyMode) persona = HIKARU_EFFICIENCY_PERSONA;
+        if (isSecurityMode) persona = SECURITY_REVIEW_PERSONA;
+
+        const modelMessage: Message = { id: generateUniqueId(), role: "model", text: "", isThinking: isThinkingMode };
+        setMessages((prev) => [...prev, userMessage, modelMessage]);
+        await handleStandardSend(input, attachment, persona, modelMessage.id);
+      }
+    } finally {
+      submitLockRef.current = false;
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   const handleStandardSend = async (text: string, attachmentFile: File | null, hikaruPersona: string, messageId: string) => {
@@ -334,9 +329,9 @@ Formulate your final, structured response based on the analysis.
     }
   };
 
-  const handleError = (error: any, messageId: string, customPrefix?: string) => {
-    console.error(customPrefix || "Error in generation:", error);
-    const errorMessage = `${customPrefix || "Error"}: Could not retrieve response from the model. Check console for details.`;
+  const handleError = (_error: unknown, messageId: string, customPrefix?: string) => {
+    console.error(customPrefix || "Error in generation");
+    const errorMessage = `${customPrefix || "Error"}: Could not retrieve response from the model.`;
     setMessages((prev) => prev.map(msg => msg.id === messageId ? {...msg, text: errorMessage, isThinking: false } : msg));
     setEthicalStatus('rejected');
   };
@@ -363,7 +358,6 @@ Formulate your final, structured response based on the analysis.
       nextStartTime.current = 0;
 
       const sessionPromise = connectLiveSession({
-        systemInstruction: HIKARU_LIVE_PERSONA,
         onMessage: async (message) => {
           const { serverContent } = message;
           if (serverContent?.modelTurn?.parts[0]?.inlineData?.data) {
@@ -416,7 +410,7 @@ Formulate your final, structured response based on the analysis.
               currentOutputTranscriptionId.current = null;
           }
         },
-        onError: (err) => { console.error("Live session error:", err); stopLiveSession(); },
+        onError: () => { console.error("Live session error"); stopLiveSession(); },
         onClose: () => { console.log("Live session closed."); stopLiveSession(); },
       });
 
@@ -434,8 +428,8 @@ Formulate your final, structured response based on the analysis.
         source.connect(scriptProcessor);
         scriptProcessor.connect(inputAudioContextRef.current!.destination);
       });
-    } catch (error) {
-      console.error("Failed to start live session:", error);
+    } catch {
+      console.error("Failed to start live session");
       setIsLiveSessionActive(false);
     }
   };
@@ -485,8 +479,8 @@ Formulate your final, structured response based on the analysis.
             }
         }
       }
-    } catch (error) {
-      console.error("Error fetching explanation:", error);
+    } catch {
+      console.error("Error fetching explanation");
       setMessages(prev => prev.map(msg => 
         msg.id === messageId 
         ? { ...msg, explanation: "Error: Could not retrieve meta-analysis." } 
@@ -538,8 +532,8 @@ Formulate your final, structured response based on the analysis.
         } else {
             throw new Error("Invalid or empty response from scenario simulation.");
         }
-    } catch (error) {
-        console.error("Error fetching scenarios:", error);
+    } catch {
+        console.error("Error fetching scenarios");
          setMessages(prev => prev.map(msg => 
             msg.id === messageId 
             ? { ...msg, text: `${msg.text}\n\n[HIKARU - SIMULATION FAILED: Could not generate scenarios.]` } 

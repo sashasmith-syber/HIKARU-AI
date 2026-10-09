@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "hikaruai",
+  "pages_build_output_dir": "./dist",
+  "compatibility_date": "2026-10-08",
+  "compatibility_flags": ["nodejs_compat"],
+  // Pages configuration cannot use the Workers Rate Limiting binding.
+  // This namespace is the request counter for the Gemini routes.
+  // KV writes are not atomic, so concurrent requests can overshoot the limit.
+  "kv_namespaces": [
+    {
+      "binding": "GEMINI_LIMITS",
+      "id": "7c4ad9b39a7f47d898d32445786ae424"
+    }
+  ]
+}
