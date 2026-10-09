@@ -1,17 +1,29 @@
-import { handleGeminiRequest, type GeminiBucket } from "../../../server/geminiHandlers";
+import { GENERATION_LIMIT, TOKEN_LIMIT, handleGeminiRequest, type GeminiBucket } from "../../../server/geminiHandlers";
 
-interface RateLimitBinding {
-  limit(options: { key: string }): Promise<{ success: boolean }>;
+interface LimitKv {
+  get(key: string): Promise<string | null>;
+  put(key: string, value: string, options: { expirationTtl: number }): Promise<void>;
 }
 
 interface GeminiEnv {
   GEMINI_API_KEY?: string;
-  GEMINI_GENERATION_LIMIT?: RateLimitBinding;
-  GEMINI_LIVE_TOKEN_LIMIT?: RateLimitBinding;
+  GEMINI_LIMITS?: LimitKv;
 }
 
-function bindingFor(env: GeminiEnv, bucket: GeminiBucket): RateLimitBinding | undefined {
-  return bucket === "live-token" ? env.GEMINI_LIVE_TOKEN_LIMIT : env.GEMINI_GENERATION_LIMIT;
+const WINDOW_MS = 60_000;
+
+async function allow(env: GeminiEnv, bucket: GeminiBucket, actor: string): Promise<boolean> {
+  const kv = env.GEMINI_LIMITS;
+  if (!kv) throw new Error("limit_unconfigured");
+  const limit = bucket === "live-token" ? TOKEN_LIMIT : GENERATION_LIMIT;
+  const windowId = Math.floor(Date.now() / WINDOW_MS);
+  const key = `${bucket}:${actor}:${windowId}`;
+  const currentRaw = await kv.get(key);
+  const current = currentRaw == null ? 0 : Number(currentRaw);
+  if (!Number.isInteger(current)) throw new Error("limit_unconfigured");
+  if (current >= limit) return false;
+  await kv.put(key, String(current + 1), { expirationTtl: 120 });
+  return true;
 }
 
 export async function onRequest(context: { request: Request; env: GeminiEnv }): Promise<Response> {
@@ -19,12 +31,7 @@ export async function onRequest(context: { request: Request; env: GeminiEnv }): 
   const actor = request.headers.get("CF-Connecting-IP") || "unknown";
   const response = await handleGeminiRequest(request, {
     apiKey: env.GEMINI_API_KEY ?? "",
-    allow: async (bucket) => {
-      const binding = bindingFor(env, bucket);
-      if (!binding) throw new Error("limit_unconfigured");
-      const result = await binding.limit({ key: actor });
-      return result.success;
-    },
+    allow: (bucket) => allow(env, bucket, actor),
   });
   console.log(
     JSON.stringify({
