@@ -86,10 +86,10 @@ const InputBar: React.FC = () => {
         )}
         <div className="input-controls">
             <div className="mode-toggle-group">
-              <div className="mode-toggle">
+              <div className="mode-toggle" title="Disabled for this preview. gemini-2.5-flash-lite-latest is not a documented model ID.">
                   <span>Efficiency</span>
                   <label className="switch">
-                  <input type="checkbox" checked={isEfficiencyMode} onChange={() => setIsEfficiencyMode(!isEfficiencyMode)} disabled={!isUIActive} />
+                  <input type="checkbox" checked={false} onChange={() => setIsEfficiencyMode(false)} disabled={true} />
                   <span className="slider"></span>
                   </label>
               </div>
@@ -100,10 +100,10 @@ const InputBar: React.FC = () => {
                   <span className="slider"></span>
                   </label>
               </div>
-              <div className="mode-toggle thinking-mode">
+              <div className="mode-toggle thinking-mode" title="Disabled for this preview. gemini-3-pro-preview was shut down on March 9, 2026.">
                   <span>Thinking</span>
                   <label className="switch">
-                  <input type="checkbox" checked={isThinkingMode} onChange={() => setIsThinkingMode(!isThinkingMode)} disabled={!isUIActive} />
+                  <input type="checkbox" checked={false} onChange={() => setIsThinkingMode(false)} disabled={true} />
                   <span className="slider"></span>
                   </label>
               </div>

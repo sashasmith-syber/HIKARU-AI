@@ -16,12 +16,10 @@
  * 4. Token is NOT embedded in frontend - users must obtain and provide it
  */
 
+// Preview allowlist. Thinking and Efficiency IDs are intentionally absent.
 const ALLOWED_MODELS = new Set([
   'gemini-3-flash-preview',
-  'gemini-3-pro-preview',
-  'gemini-2.5-flash-lite-latest',
   'gemini-2.5-flash-image',
-  'gemini-2.5-flash',
 ]);
 
 // Payload limits
@@ -116,7 +114,7 @@ const rateLimitResponse = (retryAfter, limit) => jsonResponse(429, {
  * Returns true if authorized, false otherwise
  */
 const validateAuth = (request, env) => {
-  // PREVIEW_AUTH_TOKEN must be configured
+  // Fail closed. A missing preview token never turns authentication off.
   if (!env.PREVIEW_AUTH_TOKEN) {
     return { valid: false, reason: 'Preview auth not configured' };
   }
@@ -415,7 +413,7 @@ const handleHealth = (env) => {
   return jsonResponse(200, {
     status: 'ok',
     configured: !!env.GEMINI_API_KEY,
-    authRequired: !!env.PREVIEW_AUTH_TOKEN,
+    authRequired: true,
     version: '3.6.0-bff',
   });
 };

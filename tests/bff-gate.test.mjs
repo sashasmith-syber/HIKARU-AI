@@ -90,6 +90,20 @@ for (const path of ['/api/chat', '/api/chat/stream', '/api/image/generate', '/ap
   });
 }
 
+await check('missing PREVIEW_AUTH_TOKEN denies paid calls even with a bearer', async () => {
+  const before = upstreamCalls.length;
+  const env = { GEMINI_API_KEY: KEY };
+  for (const path of ['/api/chat', '/api/chat/stream', '/api/image/generate']) {
+    const response = await worker.fetch(request(path, { token: TOKEN, ip: '203.0.113.30' }), env);
+    assert.equal(response.status, 401);
+    assert.equal(upstreamCalls.length, before);
+  }
+  const health = await worker.fetch(request('/api/health', { method: 'GET', ip: '203.0.113.31' }), env);
+  const body = await health.json();
+  assert.equal(body.authRequired, true);
+  assert.equal(body.configured, true);
+});
+
 await check('wrong bearer token is rejected before Gemini', async () => {
   const before = upstreamCalls.length;
   const response = await worker.fetch(request('/api/chat', { token: 'wrong-token', ip: '203.0.113.20' }), envWithBoth);

@@ -202,14 +202,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     startNewChat();
   };
 
-  const handleSetIsEfficiencyMode = (value: boolean) => {
-    setIsEfficiencyMode(value);
-    if (value) {
-      setIsAdvisorMode(false);
-      setIsSecurityMode(false);
-      setIsThinkingMode(false);
-    }
-    startNewChat();
+  const handleSetIsEfficiencyMode = (_value: boolean) => {
+    setIsEfficiencyMode(false);
   };
 
   const handleSetIsSecurityMode = (value: boolean) => {
@@ -222,14 +216,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     startNewChat();
   };
 
-  const handleSetIsThinkingMode = (value: boolean) => {
-    setIsThinkingMode(value);
-    if (value) {
-      setIsAdvisorMode(false);
-      setIsEfficiencyMode(false);
-      setIsSecurityMode(false);
-    }
-    startNewChat();
+  const handleSetIsThinkingMode = (_value: boolean) => {
+    setIsThinkingMode(false);
   };
   
   const generateUniqueId = () => `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -262,15 +250,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const getModelConfig = () => {
-    if (isThinkingMode) {
-      return { 
-        model: 'gemini-3-pro-preview', 
-        config: { thinkingConfig: { thinkingBudget: 32768 } } 
-      };
-    }
-    if (isEfficiencyMode) {
-      return { model: 'gemini-2.5-flash-lite-latest', config: {} };
-    }
     return { model: 'gemini-3-flash-preview', config: {} };
   };
 
