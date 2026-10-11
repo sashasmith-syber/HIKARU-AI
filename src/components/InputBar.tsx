@@ -17,9 +17,11 @@ const InputBar: React.FC = () => {
     isThinkingMode,
     setIsThinkingMode,
     isLiveSessionActive,
+    isLiveSessionSupported,
     toggleLiveSession,
     analysisMode,
-    setAnalysisMode
+    setAnalysisMode,
+    backendStatus
   } = useContext(AppContext);
 
   const [input, setInput] = useState<string>("");
@@ -158,11 +160,20 @@ const InputBar: React.FC = () => {
               aria-label="Your message to Hikaru"
               disabled={!isUIActive}
             />
-            <button onClick={toggleLiveSession} disabled={isLoading} aria-label={isLiveSessionActive ? "Stop voice session" : "Start voice session"} className={`icon-button mic-button ${isLiveSessionActive ? 'active' : ''}`}>
+            <button 
+              onClick={toggleLiveSession} 
+              disabled={isLoading || !isLiveSessionSupported} 
+              aria-label={!isLiveSessionSupported ? "Voice sessions unavailable (secure mode)" : (isLiveSessionActive ? "Stop voice session" : "Start voice session")} 
+              title={!isLiveSessionSupported ? "Live audio is not available in secure BFF mode" : undefined}
+              className={`icon-button mic-button ${isLiveSessionActive ? 'active' : ''} ${!isLiveSessionSupported ? 'disabled-feature' : ''}`}
+            >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 <path d="M19 10v2a7 7 0 0 1-14 0v-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 <line x1="12" y1="19" x2="12" y2="23" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                {!isLiveSessionSupported && (
+                  <line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                )}
               </svg>
             </button>
             <button onClick={handleSendClick} disabled={!isUIActive || (!input.trim() && !attachment)} aria-label="Send message" className="icon-button send-button">

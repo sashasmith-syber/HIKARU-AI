@@ -1,12 +1,16 @@
 {
-  "name": "ait-hikaru-ai-v3.6",
+  "name": "hikaru-ai-v3.6-bff",
   "private": true,
-  "version": "0.0.0",
+  "version": "3.6.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently \"npm run dev:bff\" \"npm run dev:web\"",
+    "dev:web": "vite",
+    "dev:bff": "wrangler dev server/worker.mjs --port 8787",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "npm run build && wrangler deploy",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "react-dom": "^19.1.1",
@@ -16,7 +20,9 @@
   "devDependencies": {
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "concurrently": "^9.2.5",
     "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "vite": "^6.2.0",
+    "wrangler": "latest"
   }
 }

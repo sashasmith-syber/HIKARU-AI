@@ -1,0 +1,13 @@
+name = "hikaru-v36-preview"
+compatibility_date = "2026-10-01"
+main = "server/worker.mjs"
+
+[assets]
+directory = "./dist"
+
+# Required secrets (configure via wrangler secret put):
+# - GEMINI_API_KEY: Google Gemini API key
+# - PREVIEW_AUTH_TOKEN: Bearer token for private preview authentication
+#
+# All protected endpoints require Authorization: Bearer <PREVIEW_AUTH_TOKEN>
+# Unauthorized requests are rejected BEFORE any Gemini API call is made
