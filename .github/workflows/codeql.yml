@@ -90,11 +90,3 @@ jobs:
           # Fail the workflow if HIGH or CRITICAL severity issues are found
           # Remove this to make it non-blocking (advisory only)
           # wait-for-processing: true
-
-      # Upload SARIF results even on failure for review
-      - name: Upload SARIF
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: results.sarif
-        continue-on-error: true
