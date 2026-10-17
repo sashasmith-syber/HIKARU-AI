@@ -68,20 +68,6 @@ jobs:
         if: matrix.language == 'javascript-typescript'
         run: npm ci
 
-      # Python: setup for accurate analysis
-      - name: Setup Python (Python only)
-        if: matrix.language == 'python'
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install Python deps (Python only)
-        if: matrix.language == 'python'
-        run: |
-          if [ -f requirements.txt ]; then
-            pip install -r requirements.txt --break-system-packages
-          fi
-
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         with:
