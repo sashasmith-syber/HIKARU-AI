@@ -1,0 +1,80 @@
+name: anthropic-wif-test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - .github/workflows/anthropic-wif-test.yml
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: anthropic-wif-test-${{ github.ref }}
+  cancel-in-progress: true
+
+# NOTE: the Anthropic federation rule should restrict the OIDC `sub` claim to
+# this repo/branch (e.g. repo:sashasmith-syber/HIKARU-AI:ref:refs/heads/main).
+env:
+  FEDERATION_RULE_ID: fdrl_01U9eA8odS3LmVQupdf1JdQn
+  ORGANIZATION_ID: 6a879382-f5f2-480d-a3cf-0d5ec6352d2f
+  SERVICE_ACCOUNT_ID: svac_01WBin7sVMvR5shFQwY54aue
+  WORKSPACE_ID: wrkspc_0154719wKFXVDXrSivh6UZos
+
+jobs:
+  call-claude:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fetch GitHub OIDC token
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const token = await core.getIDToken('https://api.anthropic.com');
+            core.setSecret(token);
+            core.exportVariable('JWT', token);
+
+      - name: Exchange for an Anthropic access token
+        run: |
+          set -euo pipefail
+          RESPONSE=$(jq -n \
+            --arg assertion "$JWT" \
+            --arg rule "$FEDERATION_RULE_ID" \
+            --arg org "$ORGANIZATION_ID" \
+            --arg sa "$SERVICE_ACCOUNT_ID" \
+            --arg ws "$WORKSPACE_ID" \
+            '{grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+              assertion: $assertion,
+              federation_rule_id: $rule,
+              organization_id: $org,
+              service_account_id: $sa,
+              workspace_id: $ws}' \
+            | curl --fail-with-body -sS https://api.anthropic.com/v1/oauth/token \
+                -H "content-type: application/json" \
+                --data @-)
+          TOKEN=$(jq -r '.access_token' <<<"$RESPONSE")
+          if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
+            echo "No access_token in response" >&2
+            exit 1
+          fi
+          echo "::add-mask::$TOKEN"
+          echo "ANTHROPIC_ACCESS_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+          jq 'with_entries(if (.key | test("token$")) then .value = "<redacted>" else . end)' <<<"$RESPONSE"
+
+      - name: Call Claude Messages API
+        run: |
+          set -euo pipefail
+          jq -n '{
+            model: "claude-sonnet-4-5",
+            max_tokens: 256,
+            messages: [{role: "user", content: "Reply with a one-sentence confirmation that workload identity federation works."}]
+          }' | curl --fail-with-body -sS https://api.anthropic.com/v1/messages \
+                -H "Authorization: Bearer $ANTHROPIC_ACCESS_TOKEN" \
+                -H "anthropic-version: 2023-06-01" \
+                -H "content-type: application/json" \
+                --data @- \
+            | jq -r '.content[0].text'
