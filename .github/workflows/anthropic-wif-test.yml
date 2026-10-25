@@ -26,6 +26,7 @@ env:
 
 jobs:
   call-claude:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
