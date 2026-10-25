@@ -72,7 +72,7 @@ jobs:
             max_tokens: 256,
             messages: [{role: "user", content: "Reply with a one-sentence confirmation that workload identity federation works."}]
           }' | curl --fail-with-body -sS https://api.anthropic.com/v1/messages \
-                -H "Authorization: ******" \
+                -H "Authorization: Bearer $ANTHROPIC_ACCESS_TOKEN" \
                 -H "anthropic-version: 2023-06-01" \
                 -H "content-type: application/json" \
                 --data @- \
