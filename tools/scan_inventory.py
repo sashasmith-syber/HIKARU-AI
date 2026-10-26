@@ -52,7 +52,8 @@ def git(repo, *args):
 def git_history(repo):
     """Map path -> list of (iso_date, author, subject), newest first."""
     hist = {}
-    out = git(repo, "log", "--name-only", "--format=@@%aI|%an|%s")
+    out = git(repo, "-c", "core.quotePath=false", "log", "--name-only",
+              "--format=@@%aI|%an|%s")
     cur = None
     for line in out.splitlines():
         if line.startswith("@@"):
@@ -70,12 +71,20 @@ def scan(repo):
         for f in sorted(files):
             full = os.path.join(root, f)
             rel = os.path.relpath(full, repo).replace(os.sep, "/")
-            st = os.stat(full)
+            try:
+                st = os.stat(full)
+            except OSError:
+                continue
             cat, ext = category(f)
             try:
                 with open(full, "rb") as fh:
-                    data = fh.read()
-                lines = data.count(b"\n") + (1 if data and not data.endswith(b"\n") else 0)
+                    lines = 0
+                    last_byte = b""
+                    while chunk := fh.read(64 * 1024):
+                        lines += chunk.count(b"\n")
+                        last_byte = chunk[-1:]
+                if last_byte and last_byte != b"\n":
+                    lines += 1
             except Exception:
                 lines = None
             h = hist.get(rel, [])
