@@ -49,7 +49,7 @@ npm run build
 npm run preview
 ```
 
-`npm run build` creates the Vite production bundle in `dist/`; run `npm run build` before `npm run preview`. The only scripts currently defined in `package.json` are `dev`, `build`, and `preview`. There is no configured test, lint, or standalone TypeScript-check script, and no automated test suite is present on `main`.
+`npm run build` creates the Vite production bundle in `dist/`; run `npm run build` before `npm run preview`. The only scripts currently defined in `package.json` are `dev`, `build`, and `preview`. The dependency ranges are not pinned by a lockfile on `main`. There is no configured test, lint, or standalone TypeScript-check script, and no automated test suite is present on `main`.
 
 ## Security and data boundaries
 
