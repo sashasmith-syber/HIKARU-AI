@@ -25,7 +25,7 @@ The application state is held in React context; no database or persistent conver
 
 ## Prerequisites
 
-- Node.js 18 or newer and npm. `package.json` does not pin Node.js or npm versions.
+- Node.js 22.12 or newer and npm. `package.json` does not pin Node.js or npm versions.
 - A Gemini API key for model-backed features.
 
 ## Install and run
