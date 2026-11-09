@@ -10,7 +10,7 @@ const WelcomeScreen: React.FC = () => (
       <div className="persona-card">
         <h1>光</h1>
         <p>
-          System online. Articulate your request, OPERATOR.
+          Interface ready. Gemini requests are disabled pending an authorized server-side backend.
         </p>
       </div>
     </div>

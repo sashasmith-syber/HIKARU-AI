@@ -158,7 +158,7 @@ const InputBar: React.FC = () => {
               aria-label="Your message to Hikaru"
               disabled={!isUIActive}
             />
-            <button onClick={toggleLiveSession} disabled={isLoading} aria-label={isLiveSessionActive ? "Stop voice session" : "Start voice session"} className={`icon-button mic-button ${isLiveSessionActive ? 'active' : ''}`}>
+            <button onClick={toggleLiveSession} disabled aria-label="Live audio unavailable until a server-side backend is configured" title="Live audio is unavailable until an authorized server-side backend is configured" className={`icon-button mic-button ${isLiveSessionActive ? 'active' : ''}`}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 <path d="M19 10v2a7 7 0 0 1-14 0v-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
