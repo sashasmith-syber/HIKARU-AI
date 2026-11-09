@@ -14,7 +14,7 @@ import {
 } from "../services/geminiService";
 import { HIKARU_PERSONA, ADVISOR_PERSONA, HIKARU_EFFICIENCY_PERSONA, HIKARU_LIVE_PERSONA, SECURITY_REVIEW_PERSONA, ANALYSIS_MODE_PROMPTS } from "../constants/personas";
 import { LiveSession } from "../services/geminiService";
-import { Chat, Type } from "@google/genai";
+import { Chat, Part, Type } from "@google/genai";
 
 type EthicalStatus = 'idle' | 'approved' | 'caution' | 'rejected';
 
@@ -189,16 +189,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { model: 'gemini-3-flash-preview', config: {} };
   };
 
-  const checkApiKeyRequirement = async () => {
-    if (isThinkingMode) {
-        if (!(await (window as any).aistudio.hasSelectedApiKey())) {
-            await (window as any).aistudio.openSelectKey();
-            return true; // Assume success and proceed
-        }
-    }
-    return true;
-  };
-
   const sendMessage = async (input: string, attachment: File | null, attachmentPreview: string | null) => {
     const userMessage: Message = { id: generateUniqueId(), role: "user", text: input, image: attachmentPreview || undefined };
     
@@ -212,7 +202,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
-    await checkApiKeyRequirement();
     setIsLoading(true);
     simulateStatusUpdate();
 
@@ -246,7 +235,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           finalPrompt = `${ANALYSIS_MODE_PROMPTS[analysisMode]}\n\n--- OPERATOR REQUEST ---\n${text}`;
       }
 
-      const messageParts: any[] = [];
+      const messageParts: Part[] = [];
       if (attachmentFile) {
         messageParts.push(await fileToGenerativePart(attachmentFile));
       }
@@ -334,9 +323,10 @@ Formulate your final, structured response based on the analysis.
     }
   };
 
-  const handleError = (error: any, messageId: string, customPrefix?: string) => {
-    console.error(customPrefix || "Error in generation:", error);
-    const errorMessage = `${customPrefix || "Error"}: Could not retrieve response from the model. Check console for details.`;
+  const handleError = (_error: unknown, messageId: string, customPrefix?: string) => {
+    const errorMessage = customPrefix
+      ? `${customPrefix} Gemini is unavailable until an authorized server-side backend is configured.`
+      : "Gemini is unavailable until an authorized server-side backend is configured.";
     setMessages((prev) => prev.map(msg => msg.id === messageId ? {...msg, text: errorMessage, isThinking: false } : msg));
     setEthicalStatus('rejected');
   };
