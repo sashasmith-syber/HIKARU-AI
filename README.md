@@ -61,7 +61,7 @@ npm run preview
 
 ## Deployment
 
-The verified production operation is `npm run build`, which writes static assets to `dist/`; `npm run preview` is a local preview. The repository does not specify a production host, deployment workflow, server runtime, or provider-specific configuration, so this README does not prescribe a production deployment.
+`npm run build` writes static assets to `dist/`; `npm run preview` is a local preview. `wrangler.jsonc` configures Cloudflare Workers to build and serve those assets with single-page-application fallback. This static-asset configuration does not implement a server-side Gemini proxy: any Gemini key included at build time remains browser-visible, so it must not be treated as a secure production key boundary.
 
 ## Contributing
 
