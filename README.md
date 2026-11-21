@@ -1,20 +1,59 @@
 <div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+
+# 光 HIKARU-AI
+
+**Remix: AIT Hikaru AI v3.6 [RMX]** — an advanced AI engineering and prompt-optimization assistant
+
+![React](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white)
+![Gemini API](https://img.shields.io/badge/Google_GenAI-@google/genai-8E75B2?logo=googlegemini&logoColor=white)
+
 </div>
 
-# Run and deploy your AI Studio app
+## Overview
 
-This contains everything you need to run your app locally.
+HIKARU-AI is a client-side Gemini chat application built around the **Hikaru persona** — a
+structured, protocol-driven AI collaborator that analyzes requests through linguistic,
+ethical, and strategic lenses before responding. It supports six operational modes,
+real-time voice conversation, on-the-fly artifact rendering, and self-evaluation tooling,
+all in a single React application.
 
-View your app in AI Studio: https://ai.studio/apps/797b44e5-ba4c-4716-80e3-4d3656a5fbc4
+## Operational Modes
 
-## Run Locally
+| Mode | Persona | Model | Purpose |
+|------|---------|-------|---------|
+| Standard | `HIKARU_PERSONA` (v3.9 protocol) | `gemini-3-flash-preview` | Five-part structured analysis: linguistic, ethical, strategic, interjection, solution framework |
+| Advisor | `ADVISOR_PERSONA` → Hikaru | same | Two-stage pipeline: detached internal advisor analyzes the request, then Hikaru formulates the final response |
+| Efficiency | `HIKARU_EFFICIENCY_PERSONA` | `gemini-2.5-flash-lite-latest` | Direct, token-conserving answers without the full protocol |
+| Security Review | `SECURITY_REVIEW_PERSONA` | standard model | Red-Team-style vulnerability reports with severity ratings and mitigations |
+| Thinking | Hikaru | `gemini-3-pro-preview` (32,768 token thinking budget) | Deep reasoning; requires an explicitly selected API key via the AI Studio key gate |
+| Live Voice | `HIKARU_LIVE_PERSONA` | `gemini-2.5-flash-native-audio-preview-09-2025` | Real-time bidirectional audio (16 kHz in / 24 kHz out, voice: Zephyr) with live transcription |
 
-**Prerequisites:**  Node.js
+## Features
 
+- **Immersive artifacts** — code and Markdown emitted via `<artifact>` tags are parsed live from the stream and rendered in a dedicated viewer panel
+- **Hyperdimensional analysis** — Causal, Probabilistic, and Abstract overlay modes injected before the request
+- **Scenario simulation** — structured-JSON best/worst/most-likely outcome forecasting per response
+- **Meta-analysis debriefing** — request the reasoning and methodology behind any Hikaru response
+- **Image generation** — keyword-triggered via `gemini-2.5-flash-image`
+- **Feedback loop** — like/dislike scoring feeding a satisfaction metric and system-optimization modal
+- **Status telemetry bar** — ethical status, interaction count, and intent-drift indicators (currently simulated)
+- Prompt library, file attachments, streaming responses, animated particle UI
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Architecture
+
+```mermaid
+flowchart LR
+    A[InputBar] --> B[AppContext]
+    B -->|Advisor mode| C[ADVISOR_PERSONA<br/>generateOneOffContentStream]
+    C --> B
+    B --> D[geminiService]
+    D --> E[Google Gemini API]
+    E --> D
+    D -->|stream chunks| B
+    B --> F[parseArtifacts]
+    F --> G[ArtifactViewer]
+    B --> H[ChatWindow]
+    B -->|Live mode| I[Live API session<br/>PCM audio 16/24 kHz]
+```
